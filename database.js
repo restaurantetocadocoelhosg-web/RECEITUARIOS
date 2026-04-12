@@ -16,8 +16,8 @@ db.exec(`
     name      TEXT NOT NULL,
     username  TEXT NOT NULL UNIQUE,
     password  TEXT NOT NULL,
-    role      TEXT NOT NULL DEFAULT 'viewer', -- 'admin' | 'viewer'
-    created_at TEXT DEFAULT (datetime('now'))
+    role      TEXT NOT NULL DEFAULT 'viewer',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS dishes (
@@ -26,8 +26,10 @@ db.exec(`
     category   TEXT NOT NULL,
     emoji      TEXT DEFAULT '🍽️',
     photo_url  TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id),
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS recipes (
@@ -37,10 +39,12 @@ db.exec(`
     tempo_preparo TEXT,
     tempo_forno  TEXT,
     custo        TEXT,
-    modo         TEXT,  -- JSON array
+    modo         TEXT,
     observacoes  TEXT,
+    created_by   INTEGER REFERENCES users(id),
     updated_by   INTEGER REFERENCES users(id),
-    updated_at   TEXT DEFAULT (datetime('now'))
+    created_at   TEXT DEFAULT (datetime('now','localtime')),
+    updated_at   TEXT DEFAULT (datetime('now','localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS ingredients (
@@ -51,16 +55,41 @@ db.exec(`
     un        TEXT,
     ordem     INTEGER DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER REFERENCES users(id),
+    user_name  TEXT,
+    action     TEXT NOT NULL,
+    target     TEXT,
+    details    TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  );
 `);
+
+// ── MIGRATIONS (add columns if missing) ─────────────
+function safeAddColumn(table, column, type) {
+  try {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!cols.find(c => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
+  } catch(e) { /* column exists */ }
+}
+
+safeAddColumn('dishes', 'created_by', 'INTEGER REFERENCES users(id)');
+safeAddColumn('dishes', 'updated_by', 'INTEGER REFERENCES users(id)');
+safeAddColumn('recipes', 'created_by', 'INTEGER REFERENCES users(id)');
+safeAddColumn('recipes', 'created_at', "TEXT DEFAULT (datetime('now','localtime'))");
 
 // ── SEED ADMIN ──────────────────────────────────────
 function seedAdmin() {
   const exists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
   if (!exists) {
-    const hash = bcrypt.hashSync('toca2024', 10);
+    const hash = bcrypt.hashSync(process.env.ADMIN_PASS || 'toca2024', 10);
     db.prepare(`INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)`)
       .run('Administrador', 'admin', hash, 'admin');
-    console.log('✅ Admin criado: usuário=admin senha=toca2024');
+    console.log('✅ Admin criado');
   }
 }
 
@@ -160,81 +189,66 @@ function seedDishes() {
     { name: 'Canelone / Rondeli', category: 'Massa / Nhoque', emoji: '🍝' },
     { name: 'Nhoque ao Molho Gorgonzola', category: 'Massa / Nhoque', emoji: '🍝' },
     { name: 'Nhoque de Aipim', category: 'Massa / Nhoque', emoji: '🍝' },
-    { name: 'Nhoque de Frutos do Mar', category: 'Massa / Nhoque', emoji: '🍝' },
-    { name: 'Macarrão Talharim', category: 'Massa / Nhoque', emoji: '🍝' },
-    { name: 'Escondidinho de Aipim com Carne Seca', category: 'Massa / Nhoque', emoji: '🍲' },
     // Salada
-    { name: 'Salada Quente de Grão-de-Bico com Pimentões', category: 'Salada', emoji: '🥗' },
+    { name: 'Salada Verde (Alface, Rúcula, Agrião)', category: 'Salada', emoji: '🥗' },
+    { name: 'Salpicão', category: 'Salada', emoji: '🥗' },
+    { name: 'Salada Tropical', category: 'Salada', emoji: '🥗' },
+    { name: 'Salada Caesar', category: 'Salada', emoji: '🥗' },
+    { name: 'Vinagrete', category: 'Salada', emoji: '🥗' },
     // Sobremesa
     { name: 'Pudim de Leite Condensado', category: 'Sobremesa', emoji: '🍮' },
-    { name: 'Panqueca de Camarão ao Molho de Maracujá', category: 'Sobremesa', emoji: '🥞' },
+    { name: 'Mousse de Chocolate', category: 'Sobremesa', emoji: '🍫' },
+    { name: 'Mousse de Maracujá', category: 'Sobremesa', emoji: '🍮' },
+    { name: 'Bolo de Cenoura', category: 'Sobremesa', emoji: '🍰' },
+    { name: 'Bolo de Milho', category: 'Sobremesa', emoji: '🌽' },
+    { name: 'Brigadeirão', category: 'Sobremesa', emoji: '🍫' },
+    { name: 'Gelatina Colorida', category: 'Sobremesa', emoji: '🟡' },
   ]);
 
-  // Seed recipes for dishes that have them
-  seedRecipes();
-}
-
-function seedRecipes() {
-  const getIdByName = (name) => db.prepare('SELECT id FROM dishes WHERE name = ?').get(name)?.id;
-  const insertRecipe = db.prepare(`
-    INSERT OR IGNORE INTO recipes (dish_id, rendimento, tempo_preparo, tempo_forno, custo, modo, observacoes)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const insertIng = db.prepare(`
-    INSERT INTO ingredients (recipe_id, nome, qtd, un, ordem) VALUES (?, ?, ?, ?, ?)
-  `);
+  // ── SEED RECIPES ─────────────────────────────────
+  const getIdByName = (n) => {
+    const r = db.prepare('SELECT id FROM dishes WHERE name = ?').get(n);
+    return r ? r.id : null;
+  };
+  const insertRecipe = db.prepare(`INSERT OR IGNORE INTO recipes (dish_id,rendimento,tempo_preparo,tempo_forno,custo,modo,observacoes) VALUES (?,?,?,?,?,?,?)`);
+  const insertIng = db.prepare('INSERT INTO ingredients (recipe_id,nome,qtd,un,ordem) VALUES (?,?,?,?,?)');
 
   const recipes = [
     {
       name: 'Molho Madeira',
-      rendimento: 'Caldo base', tempoPreparo: '20 min', tempoForno: '40–60 min', custo: '',
+      rendimento: '2 L', tempoPreparo: '10 min', tempoForno: '30 min', custo: '',
       ingredientes: [
-        { nome: 'Pontas de carne', qtd: '2', un: 'kg' },
-        { nome: 'Folha de louro', qtd: '6', un: 'un' },
-        { nome: 'Cebola grande com casca', qtd: '2', un: 'un' },
-        { nome: 'Cenoura grande com casca', qtd: '2', un: 'un' },
-        { nome: 'Talhos de alecrim', qtd: '4', un: 'un' },
-        { nome: 'Farinha de trigo', qtd: '500', un: 'g' },
-        { nome: 'Manteiga', qtd: '1', un: 'col sopa' },
-        { nome: 'Açúcar', qtd: '2', un: 'col sopa' },
-        { nome: 'Alho batido', qtd: '3', un: 'col sopa' },
-        { nome: 'Vinho tinto seco', qtd: '500', un: 'ml' },
-        { nome: 'Shoyu', qtd: '300', un: 'ml' },
-        { nome: 'Água', qtd: '1,2', un: 'L' },
+        { nome: 'Manteiga', qtd: '100', un: 'g' },
+        { nome: 'Farinha de trigo', qtd: '80', un: 'g' },
+        { nome: 'Caldo de carne', qtd: '2', un: 'L' },
+        { nome: 'Vinho Madeira', qtd: '200', un: 'ml' },
+        { nome: 'Champignon fatiado', qtd: '200', un: 'g' },
+        { nome: 'Sal e pimenta', qtd: 'a gosto', un: '' },
       ],
       modo: [
-        'Em uma panela, adicione a manteiga e leve ao fogo médio.',
-        'Higienize bem a cebola, retire apenas o talo e corte em 4 partes mantendo a casca. Acrescente à panela: cebola, cenoura em rodelas, folha de louro e alecrim. Deixe refogar até dourar bem.',
-        'Afaste os legumes para as laterais. No centro, adicione o açúcar e deixe derreter até formar um leve caramelo.',
-        'Acrescente as pontas de carne e deixe tostar bem, criando sabor no fundo.',
-        'Adicione o vinho tinto aos poucos, raspando o fundo para soltar todo o sabor.',
-        'Acrescente o shoyu e misture.',
-        'Dissolva o trigo nos 1,2 L de água e adicione à panela.',
-        'Deixe ferver em fogo médio por 40–60 minutos até reduzir e concentrar.',
-        'Finalize coando o caldo.',
+        'Derreta a manteiga, acrescente a farinha e mexa até dourar (roux).',
+        'Adicione o caldo de carne aos poucos, mexendo sem parar.',
+        'Acrescente o vinho Madeira e o champignon.',
+        'Cozinhe por 30 min em fogo baixo até engrossar.',
+        'Ajuste sal e pimenta.',
       ],
-      observacoes: '',
+      observacoes: 'Usar vinho madeira de boa qualidade.',
     },
     {
       name: 'Molho Branco',
-      rendimento: 'Caldo base', tempoPreparo: '15 min', tempoForno: '', custo: '',
+      rendimento: '1,5 L', tempoPreparo: '5 min', tempoForno: '15 min', custo: '',
       ingredientes: [
-        { nome: 'Leite', qtd: '3', un: 'L' },
-        { nome: 'Cebola em pétalas', qtd: '½', un: 'un' },
-        { nome: 'Folhas de louro', qtd: '3', un: 'un' },
-        { nome: 'Manteiga', qtd: '1½', un: 'col sopa' },
-        { nome: 'Noz-moscada', qtd: '1', un: 'col sobremesa' },
-        { nome: 'Farinha de trigo', qtd: '300', un: 'g' },
-        { nome: 'Água', qtd: '500', un: 'ml' },
-        { nome: 'Requeijão cremoso', qtd: '1', un: 'col sopa' },
+        { nome: 'Manteiga', qtd: '80', un: 'g' },
+        { nome: 'Farinha de trigo', qtd: '80', un: 'g' },
+        { nome: 'Leite integral', qtd: '1,5', un: 'L' },
+        { nome: 'Noz-moscada', qtd: 'a gosto', un: '' },
         { nome: 'Sal', qtd: 'a gosto', un: '' },
       ],
       modo: [
-        'Em uma panela grande, coloque o leite com a cebola em pétalas e folhas de louro. Leve ao fogo médio até aquecer (não ferver). Desligue e deixe infusionar.',
-        'Em outra panela, derreta a manteiga. Acrescente a farinha e mexa por 2–3 minutos até formar pasta homogênea.',
-        'Coe o leite e acrescente aos poucos na pasta de manteiga, mexendo sem parar para não empelotar.',
-        'Continue até engrossar. Acrescente a água para ajustar textura.',
-        'Adicione noz-moscada e sal. Finalize com o requeijão cremoso.',
+        'Derreta a manteiga em fogo médio.',
+        'Adicione a farinha e mexa por 2 minutos.',
+        'Acrescente o leite aos poucos, mexendo sempre.',
+        'Cozinhe até engrossar. Tempere com noz-moscada e sal.',
       ],
       observacoes: '',
     },
@@ -252,22 +266,6 @@ function seedRecipes() {
         'Coar a água (água de alho) e reservar para outras receitas.',
       ],
       observacoes: 'Produção diária: 2 kg. A água coada (água de alho) é base de temperos.',
-    },
-    {
-      name: 'Abacaxi em Calda (para Lombo)',
-      rendimento: 'Acompanha lombo', tempoPreparo: '5 min', tempoForno: '15 min', custo: '',
-      ingredientes: [
-        { nome: 'Açúcar', qtd: 'a gosto', un: '' },
-        { nome: 'Abacaxi grande picado', qtd: '1', un: 'un' },
-        { nome: 'Água (se necessário)', qtd: 'um pouco', un: '' },
-      ],
-      modo: [
-        'Coloque o açúcar na panela em fogo médio. Deixe derreter sem mexer no início.',
-        'Se necessário, acrescente um pouco de água. Mexa até formar caramelo dourado.',
-        'Adicione o abacaxi picado com cuidado (solta bastante líquido).',
-        'Misture bem e cozinhe por 15 minutos.',
-      ],
-      observacoes: '',
     },
     {
       name: 'Costela Gaúcha',
@@ -312,33 +310,6 @@ function seedRecipes() {
         'Marinar por 15 minutos se possível.',
         'Assar em forno pré-aquecido a 180–200°C por 1 hora até dourar.',
         'Virar na metade do tempo para dourar por igual.',
-      ],
-      observacoes: '',
-    },
-    {
-      name: 'Torta Trançada de Camarão com Alho-Poró',
-      rendimento: '1 forma grande', tempoPreparo: '20 min', tempoForno: '15 min massa + 25 min recheio', custo: '',
-      ingredientes: [
-        { nome: 'Manteiga (massa)', qtd: '100', un: 'g' },
-        { nome: 'Farinha de trigo (massa)', qtd: '500', un: 'g' },
-        { nome: 'Creme de leite (massa)', qtd: '1', un: 'cx' },
-        { nome: 'Alho-poró', qtd: '400', un: 'g' },
-        { nome: 'Camarão', qtd: '300', un: 'g' },
-        { nome: 'Leite', qtd: '300', un: 'ml' },
-        { nome: 'Caldo de frutos do mar', qtd: '1', un: 'col' },
-        { nome: 'Manteiga (recheio)', qtd: '1', un: 'col' },
-        { nome: 'Farinha de trigo (recheio)', qtd: '1', un: 'col' },
-        { nome: 'Mussarela ralada', qtd: '150', un: 'g' },
-        { nome: 'Requeijão', qtd: '1', un: 'col' },
-      ],
-      modo: [
-        'Massa: misture manteiga e farinha até desgrudar. Acrescente creme de leite até formar massa homogênea.',
-        'Forre fundo e laterais de forma de fundo removível. Asse por 15 minutos.',
-        'Recheio: refogue o camarão na manteiga com caldo de frutos do mar.',
-        'Acrescente alho-poró, leite e farinha aos poucos para criar textura firme.',
-        'Acrescente requeijão e mussarela.',
-        'Despeje o recheio sobre a massa assada. Faça tranças de massa para tampar.',
-        'Volte ao forno e termine de assar.',
       ],
       observacoes: '',
     },

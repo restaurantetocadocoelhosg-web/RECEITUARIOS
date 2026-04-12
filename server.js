@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_, file, cb) => {
     const ok = /jpeg|jpg|png|webp/.test(file.mimetype);
     cb(ok ? null : new Error('Apenas imagens JPG/PNG/WEBP'), ok);
@@ -56,22 +56,50 @@ function adminOnly(req, res, next) {
   next();
 }
 
-// ── KEEP-ALIVE (evita o Railway dormir) ─────────────
+// ── ACTIVITY LOG HELPER ─────────────────────────────
+function logActivity(userId, userName, action, target, details) {
+  db.prepare('INSERT INTO activity_log (user_id, user_name, action, target, details) VALUES (?,?,?,?,?)')
+    .run(userId, userName, action, target, details || null);
+}
+
+// ── SANITIZE (XSS prevention) ───────────────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── KEEP-ALIVE ──────────────────────────────────────
 setInterval(() => {
   const http = require('http');
   const https = require('https');
-  const url = APP_URL;
-  const client = url.startsWith('https') ? https : http;
-  client.get(`${url}/api/ping`, () => {}).on('error', () => {});
-}, 14 * 60 * 1000); // a cada 14 minutos
+  const client = APP_URL.startsWith('https') ? https : http;
+  client.get(`${APP_URL}/api/ping`, () => {}).on('error', () => {});
+}, 14 * 60 * 1000);
 
 app.get('/api/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
 
 // ══════════════════════════════════════════════════════
+//  SYNC — endpoint para clientes verificarem atualizações
+// ══════════════════════════════════════════════════════
+app.get('/api/sync', auth, (req, res) => {
+  const since = req.query.since || '2000-01-01';
+  // Check if any dish or recipe was updated since timestamp
+  const lastDish = db.prepare("SELECT MAX(updated_at) as t FROM dishes").get();
+  const lastRecipe = db.prepare("SELECT MAX(updated_at) as t FROM recipes").get();
+  const lastActivity = db.prepare("SELECT MAX(created_at) as t FROM activity_log").get();
+
+  const latest = [lastDish?.t, lastRecipe?.t, lastActivity?.t]
+    .filter(Boolean)
+    .sort()
+    .pop() || since;
+
+  const needsRefresh = latest > since;
+  res.json({ needsRefresh, latest });
+});
+
+// ══════════════════════════════════════════════════════
 //  AUTH ROUTES
 // ══════════════════════════════════════════════════════
-
-// Login
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Dados incompletos' });
@@ -81,10 +109,10 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Usuário ou senha inválidos' });
 
   const token = jwt.sign({ id: user.id, name: user.name, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+  logActivity(user.id, user.name, 'login', null, null);
   res.json({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role } });
 });
 
-// Me
 app.get('/api/auth/me', auth, (req, res) => {
   const user = db.prepare('SELECT id, name, username, role, created_at FROM users WHERE id = ?').get(req.user.id);
   res.json(user);
@@ -93,7 +121,6 @@ app.get('/api/auth/me', auth, (req, res) => {
 // ══════════════════════════════════════════════════════
 //  USER ROUTES (admin only)
 // ══════════════════════════════════════════════════════
-
 app.get('/api/users', auth, adminOnly, (_, res) => {
   const users = db.prepare('SELECT id, name, username, role, created_at FROM users ORDER BY id').all();
   res.json(users);
@@ -108,6 +135,7 @@ app.post('/api/users', auth, adminOnly, (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     const result = db.prepare('INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)')
       .run(name.trim(), username.trim().toLowerCase(), hash, role);
+    logActivity(req.user.id, req.user.name, 'criar_usuario', name, `Perfil: ${role}`);
     res.json({ id: result.lastInsertRowid, name, username, role });
   } catch (e) {
     if (e.message.includes('UNIQUE')) return res.status(409).json({ error: 'Usuário já existe' });
@@ -125,12 +153,15 @@ app.put('/api/users/:id', auth, adminOnly, (req, res) => {
   const newPass = password ? bcrypt.hashSync(password, 10) : user.password;
 
   db.prepare('UPDATE users SET name=?, password=?, role=? WHERE id=?').run(newName, newPass, newRole, user.id);
+  logActivity(req.user.id, req.user.name, 'editar_usuario', newName, null);
   res.json({ ok: true });
 });
 
 app.delete('/api/users/:id', auth, adminOnly, (req, res) => {
   if (parseInt(req.params.id) === req.user.id) return res.status(400).json({ error: 'Não pode excluir a si mesmo' });
+  const user = db.prepare('SELECT name FROM users WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  logActivity(req.user.id, req.user.name, 'excluir_usuario', user?.name, null);
   res.json({ ok: true });
 });
 
@@ -138,12 +169,23 @@ app.delete('/api/users/:id', auth, adminOnly, (req, res) => {
 //  DISH ROUTES
 // ══════════════════════════════════════════════════════
 
-// List all dishes with recipe status
+// List all dishes with recipe status + author info
 app.get('/api/dishes', auth, (_, res) => {
   const dishes = db.prepare(`
-    SELECT d.*, CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as has_recipe
+    SELECT d.*,
+      CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as has_recipe,
+      u_created.name as created_by_name,
+      u_updated.name as updated_by_name,
+      r.updated_at as recipe_updated_at,
+      r_author.name as recipe_author_name,
+      r_updater.name as recipe_updater_name,
+      r.created_at as recipe_created_at
     FROM dishes d
     LEFT JOIN recipes r ON r.dish_id = d.id
+    LEFT JOIN users u_created ON u_created.id = d.created_by
+    LEFT JOIN users u_updated ON u_updated.id = d.updated_by
+    LEFT JOIN users r_author ON r_author.id = r.created_by
+    LEFT JOIN users r_updater ON r_updater.id = r.updated_by
     ORDER BY d.category, d.name
   `).all();
   res.json(dishes);
@@ -151,10 +193,27 @@ app.get('/api/dishes', auth, (_, res) => {
 
 // Get single dish with recipe
 app.get('/api/dishes/:id', auth, (req, res) => {
-  const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
+  const dish = db.prepare(`
+    SELECT d.*,
+      u_created.name as created_by_name,
+      u_updated.name as updated_by_name
+    FROM dishes d
+    LEFT JOIN users u_created ON u_created.id = d.created_by
+    LEFT JOIN users u_updated ON u_updated.id = d.updated_by
+    WHERE d.id = ?
+  `).get(req.params.id);
   if (!dish) return res.status(404).json({ error: 'Prato não encontrado' });
 
-  const recipe = db.prepare('SELECT * FROM recipes WHERE dish_id = ?').get(dish.id);
+  const recipe = db.prepare(`
+    SELECT r.*,
+      u_created.name as created_by_name,
+      u_updated.name as updated_by_name
+    FROM recipes r
+    LEFT JOIN users u_created ON u_created.id = r.created_by
+    LEFT JOIN users u_updated ON u_updated.id = r.updated_by
+    WHERE r.dish_id = ?
+  `).get(dish.id);
+
   if (recipe) {
     recipe.modo = JSON.parse(recipe.modo || '[]');
     recipe.ingredientes = db.prepare('SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY ordem').all(recipe.id);
@@ -167,16 +226,18 @@ app.post('/api/dishes', auth, adminOnly, (req, res) => {
   const { name, category, emoji } = req.body;
   if (!name || !category) return res.status(400).json({ error: 'Nome e categoria obrigatórios' });
 
-  const result = db.prepare('INSERT INTO dishes (name, category, emoji) VALUES (?, ?, ?)')
-    .run(name.trim(), category.trim(), emoji || '🍽️');
+  const result = db.prepare('INSERT INTO dishes (name, category, emoji, created_by, updated_by) VALUES (?, ?, ?, ?, ?)')
+    .run(name.trim(), category.trim(), emoji || '🍽️', req.user.id, req.user.id);
+  logActivity(req.user.id, req.user.name, 'criar_prato', name.trim(), `Categoria: ${category}`);
   res.json({ id: result.lastInsertRowid, name, category, emoji });
 });
 
 // Update dish
 app.put('/api/dishes/:id', auth, adminOnly, (req, res) => {
   const { name, category, emoji } = req.body;
-  db.prepare(`UPDATE dishes SET name=COALESCE(?,name), category=COALESCE(?,category), emoji=COALESCE(?,emoji), updated_at=datetime('now') WHERE id=?`)
-    .run(name, category, emoji, req.params.id);
+  db.prepare(`UPDATE dishes SET name=COALESCE(?,name), category=COALESCE(?,category), emoji=COALESCE(?,emoji), updated_by=?, updated_at=datetime('now','localtime') WHERE id=?`)
+    .run(name, category, emoji, req.user.id, req.params.id);
+  logActivity(req.user.id, req.user.name, 'editar_prato', name || '(prato)', null);
   res.json({ ok: true });
 });
 
@@ -189,6 +250,7 @@ app.delete('/api/dishes/:id', auth, adminOnly, (req, res) => {
     if (fs.existsSync(file)) fs.unlinkSync(file);
   }
   db.prepare('DELETE FROM dishes WHERE id = ?').run(req.params.id);
+  logActivity(req.user.id, req.user.name, 'excluir_prato', dish.name, null);
   res.json({ ok: true });
 });
 
@@ -199,14 +261,14 @@ app.post('/api/dishes/:id/photo', auth, adminOnly, upload.single('photo'), (req,
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
   if (!dish) return res.status(404).json({ error: 'Prato não encontrado' });
 
-  // Delete old photo
   if (dish.photo_url) {
     const old = path.join(UPLOADS_DIR, path.basename(dish.photo_url));
     if (fs.existsSync(old)) fs.unlinkSync(old);
   }
 
   const photoUrl = `/uploads/${req.file.filename}`;
-  db.prepare(`UPDATE dishes SET photo_url=?, updated_at=datetime('now') WHERE id=?`).run(photoUrl, dish.id);
+  db.prepare(`UPDATE dishes SET photo_url=?, updated_by=?, updated_at=datetime('now','localtime') WHERE id=?`).run(photoUrl, req.user.id, dish.id);
+  logActivity(req.user.id, req.user.name, 'foto_prato', dish.name, 'Upload de foto');
   res.json({ photo_url: photoUrl });
 });
 
@@ -216,7 +278,8 @@ app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
   if (dish?.photo_url) {
     const file = path.join(UPLOADS_DIR, path.basename(dish.photo_url));
     if (fs.existsSync(file)) fs.unlinkSync(file);
-    db.prepare(`UPDATE dishes SET photo_url=NULL, updated_at=datetime('now') WHERE id=?`).run(dish.id);
+    db.prepare(`UPDATE dishes SET photo_url=NULL, updated_by=?, updated_at=datetime('now','localtime') WHERE id=?`).run(req.user.id, dish.id);
+    logActivity(req.user.id, req.user.name, 'remover_foto', dish.name, null);
   }
   res.json({ ok: true });
 });
@@ -224,23 +287,25 @@ app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
 // ══════════════════════════════════════════════════════
 //  RECIPE ROUTES
 // ══════════════════════════════════════════════════════
-
 app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
   const { rendimento, tempo_preparo, tempo_forno, custo, ingredientes, modo, observacoes } = req.body;
   const dishId = parseInt(req.params.id);
+  const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(dishId)?.name || '';
 
   const existing = db.prepare('SELECT id FROM recipes WHERE dish_id = ?').get(dishId);
 
   let recipeId;
   if (existing) {
-    db.prepare(`UPDATE recipes SET rendimento=?,tempo_preparo=?,tempo_forno=?,custo=?,modo=?,observacoes=?,updated_by=?,updated_at=datetime('now') WHERE id=?`)
+    db.prepare(`UPDATE recipes SET rendimento=?,tempo_preparo=?,tempo_forno=?,custo=?,modo=?,observacoes=?,updated_by=?,updated_at=datetime('now','localtime') WHERE id=?`)
       .run(rendimento, tempo_preparo, tempo_forno, custo, JSON.stringify(modo || []), observacoes, req.user.id, existing.id);
     recipeId = existing.id;
     db.prepare('DELETE FROM ingredients WHERE recipe_id = ?').run(recipeId);
+    logActivity(req.user.id, req.user.name, 'editar_receita', dishName, null);
   } else {
-    const r = db.prepare(`INSERT INTO recipes (dish_id,rendimento,tempo_preparo,tempo_forno,custo,modo,observacoes,updated_by) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(dishId, rendimento, tempo_preparo, tempo_forno, custo, JSON.stringify(modo || []), observacoes, req.user.id);
+    const r = db.prepare(`INSERT INTO recipes (dish_id,rendimento,tempo_preparo,tempo_forno,custo,modo,observacoes,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(dishId, rendimento, tempo_preparo, tempo_forno, custo, JSON.stringify(modo || []), observacoes, req.user.id, req.user.id);
     recipeId = r.lastInsertRowid;
+    logActivity(req.user.id, req.user.name, 'criar_receita', dishName, null);
   }
 
   const insertIng = db.prepare('INSERT INTO ingredients (recipe_id,nome,qtd,un,ordem) VALUES (?,?,?,?,?)');
@@ -252,9 +317,26 @@ app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
 });
 
 app.delete('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
+  const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(req.params.id)?.name || '';
   const recipe = db.prepare('SELECT id FROM recipes WHERE dish_id = ?').get(req.params.id);
-  if (recipe) db.prepare('DELETE FROM recipes WHERE id = ?').run(recipe.id);
+  if (recipe) {
+    db.prepare('DELETE FROM recipes WHERE id = ?').run(recipe.id);
+    logActivity(req.user.id, req.user.name, 'excluir_receita', dishName, null);
+  }
   res.json({ ok: true });
+});
+
+// ══════════════════════════════════════════════════════
+//  ACTIVITY LOG ROUTES
+// ══════════════════════════════════════════════════════
+app.get('/api/activity', auth, (req, res) => {
+  const limit = parseInt(req.query.limit) || 50;
+  const logs = db.prepare(`
+    SELECT * FROM activity_log
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(limit);
+  res.json(logs);
 });
 
 // ── CATCH ALL → index.html ───────────────────────────
