@@ -101,30 +101,6 @@ function seedAdmin() {
   }
 }
 
-// ── SEED DISHES ─────────────────────────────────────
-function seedDishes() {
-  const count = db.prepare('SELECT COUNT(*) as c FROM dishes').get().c;
-  if (count > 0) return;
-
-  const seedPath = path.join(__dirname, 'produtos_seed.json');
-  if (!fs.existsSync(seedPath)) return;
-
-  try {
-    const produtos = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
-    const insert = db.prepare('INSERT INTO dishes (name, category, emoji) VALUES (?, ?, ?)');
-    const insertMany = db.transaction((items) => {
-      for (const p of items) {
-        insert.run(p.name || p.nome, p.category || p.categoria || 'Outro', p.emoji || '🍽️');
-      }
-    });
-    insertMany(produtos);
-    console.log(`✅ ${produtos.length} pratos importados`);
-  } catch(e) {
-    console.error('Erro no seed de pratos:', e.message);
-  }
-}
-
 seedAdmin();
-seedDishes();
 
 module.exports = db;
