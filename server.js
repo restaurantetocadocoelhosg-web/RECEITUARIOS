@@ -13,8 +13,9 @@ const APP_URL = process.env.RAILWAY_PUBLIC_DOMAIN
   ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
   : `http://localhost:${PORT}`;
 
-// ── UPLOADS DIR ─────────────────────────────────────
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+// ── UPLOADS DIR — usa /app/data/uploads se existir (Railway volume) ─────────
+const DATA_DIR = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // ── MULTER ──────────────────────────────────────────
@@ -39,7 +40,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Auth middleware
+// ── ROLES ────────────────────────────────────────────
+// admin   → tudo (usuários, pratos, receitas, log)
+// gerente → pratos + receitas (não gerencia usuários)
+// operador → só leitura
+const ROLES = ['admin', 'gerente', 'operador'];
+
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Não autorizado' });
@@ -56,7 +62,14 @@ function adminOnly(req, res, next) {
   next();
 }
 
-// ── ACTIVITY LOG HELPER ─────────────────────────────
+// admin ou gerente podem criar/editar pratos e receitas
+function canEdit(req, res, next) {
+  if (!['admin', 'gerente'].includes(req.user.role))
+    return res.status(403).json({ error: 'Sem permissão para editar' });
+  next();
+}
+
+// ── ACTIVITY LOG ─────────────────────────────────────
 function logActivity(userId, userName, action, target, details) {
   db.prepare('INSERT INTO activity_log (user_id, user_name, action, target, details) VALUES (?,?,?,?,?)')
     .run(userId, userName, action, target, details || null);
@@ -79,26 +92,22 @@ setInterval(() => {
 app.get('/api/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
 
 // ══════════════════════════════════════════════════════
-//  SYNC — endpoint para clientes verificarem atualizações
+//  SYNC
 // ══════════════════════════════════════════════════════
 app.get('/api/sync', auth, (req, res) => {
   const since = req.query.since || '2000-01-01';
-  // Check if any dish or recipe was updated since timestamp
   const lastDish = db.prepare("SELECT MAX(updated_at) as t FROM dishes").get();
   const lastRecipe = db.prepare("SELECT MAX(updated_at) as t FROM recipes").get();
   const lastActivity = db.prepare("SELECT MAX(created_at) as t FROM activity_log").get();
 
   const latest = [lastDish?.t, lastRecipe?.t, lastActivity?.t]
-    .filter(Boolean)
-    .sort()
-    .pop() || since;
+    .filter(Boolean).sort().pop() || since;
 
-  const needsRefresh = latest > since;
-  res.json({ needsRefresh, latest });
+  res.json({ needsRefresh: latest > since, latest });
 });
 
 // ══════════════════════════════════════════════════════
-//  AUTH ROUTES
+//  AUTH
 // ══════════════════════════════════════════════════════
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
@@ -108,7 +117,10 @@ app.post('/api/auth/login', (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password))
     return res.status(401).json({ error: 'Usuário ou senha inválidos' });
 
-  const token = jwt.sign({ id: user.id, name: user.name, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign(
+    { id: user.id, name: user.name, username: user.username, role: user.role },
+    JWT_SECRET, { expiresIn: '30d' }
+  );
   logActivity(user.id, user.name, 'login', null, null);
   res.json({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role } });
 });
@@ -119,7 +131,7 @@ app.get('/api/auth/me', auth, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
-//  USER ROUTES (admin only)
+//  USERS (admin only)
 // ══════════════════════════════════════════════════════
 app.get('/api/users', auth, adminOnly, (_, res) => {
   const users = db.prepare('SELECT id, name, username, role, created_at FROM users ORDER BY id').all();
@@ -129,7 +141,7 @@ app.get('/api/users', auth, adminOnly, (_, res) => {
 app.post('/api/users', auth, adminOnly, (req, res) => {
   const { name, username, password, role } = req.body;
   if (!name || !username || !password) return res.status(400).json({ error: 'Preencha todos os campos' });
-  if (!['admin', 'viewer'].includes(role)) return res.status(400).json({ error: 'Perfil inválido' });
+  if (!ROLES.includes(role)) return res.status(400).json({ error: 'Perfil inválido' });
 
   try {
     const hash = bcrypt.hashSync(password, 10);
@@ -145,6 +157,7 @@ app.post('/api/users', auth, adminOnly, (req, res) => {
 
 app.put('/api/users/:id', auth, adminOnly, (req, res) => {
   const { name, password, role } = req.body;
+  if (role && !ROLES.includes(role)) return res.status(400).json({ error: 'Perfil inválido' });
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
@@ -153,7 +166,7 @@ app.put('/api/users/:id', auth, adminOnly, (req, res) => {
   const newPass = password ? bcrypt.hashSync(password, 10) : user.password;
 
   db.prepare('UPDATE users SET name=?, password=?, role=? WHERE id=?').run(newName, newPass, newRole, user.id);
-  logActivity(req.user.id, req.user.name, 'editar_usuario', newName, null);
+  logActivity(req.user.id, req.user.name, 'editar_usuario', newName, `Perfil: ${newRole}`);
   res.json({ ok: true });
 });
 
@@ -166,10 +179,8 @@ app.delete('/api/users/:id', auth, adminOnly, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
-//  DISH ROUTES
+//  DISHES
 // ══════════════════════════════════════════════════════
-
-// List all dishes with recipe status + author info
 app.get('/api/dishes', auth, (_, res) => {
   const dishes = db.prepare(`
     SELECT d.*,
@@ -191,12 +202,9 @@ app.get('/api/dishes', auth, (_, res) => {
   res.json(dishes);
 });
 
-// Get single dish with recipe
 app.get('/api/dishes/:id', auth, (req, res) => {
   const dish = db.prepare(`
-    SELECT d.*,
-      u_created.name as created_by_name,
-      u_updated.name as updated_by_name
+    SELECT d.*, u_created.name as created_by_name, u_updated.name as updated_by_name
     FROM dishes d
     LEFT JOIN users u_created ON u_created.id = d.created_by
     LEFT JOIN users u_updated ON u_updated.id = d.updated_by
@@ -205,9 +213,7 @@ app.get('/api/dishes/:id', auth, (req, res) => {
   if (!dish) return res.status(404).json({ error: 'Prato não encontrado' });
 
   const recipe = db.prepare(`
-    SELECT r.*,
-      u_created.name as created_by_name,
-      u_updated.name as updated_by_name
+    SELECT r.*, u_created.name as created_by_name, u_updated.name as updated_by_name
     FROM recipes r
     LEFT JOIN users u_created ON u_created.id = r.created_by
     LEFT JOIN users u_updated ON u_updated.id = r.updated_by
@@ -221,8 +227,8 @@ app.get('/api/dishes/:id', auth, (req, res) => {
   res.json({ ...dish, recipe: recipe || null });
 });
 
-// Create dish
-app.post('/api/dishes', auth, adminOnly, (req, res) => {
+// Criar prato — admin ou gerente
+app.post('/api/dishes', auth, canEdit, (req, res) => {
   const { name, category, emoji } = req.body;
   if (!name || !category) return res.status(400).json({ error: 'Nome e categoria obrigatórios' });
 
@@ -232,8 +238,8 @@ app.post('/api/dishes', auth, adminOnly, (req, res) => {
   res.json({ id: result.lastInsertRowid, name, category, emoji });
 });
 
-// Update dish
-app.put('/api/dishes/:id', auth, adminOnly, (req, res) => {
+// Editar prato — admin ou gerente
+app.put('/api/dishes/:id', auth, canEdit, (req, res) => {
   const { name, category, emoji } = req.body;
   db.prepare(`UPDATE dishes SET name=COALESCE(?,name), category=COALESCE(?,category), emoji=COALESCE(?,emoji), updated_by=?, updated_at=datetime('now','localtime') WHERE id=?`)
     .run(name, category, emoji, req.user.id, req.params.id);
@@ -241,8 +247,8 @@ app.put('/api/dishes/:id', auth, adminOnly, (req, res) => {
   res.json({ ok: true });
 });
 
-// Delete dish
-app.delete('/api/dishes/:id', auth, adminOnly, (req, res) => {
+// Excluir prato — admin ou gerente
+app.delete('/api/dishes/:id', auth, canEdit, (req, res) => {
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
   if (!dish) return res.status(404).json({ error: 'Prato não encontrado' });
   if (dish.photo_url) {
@@ -254,8 +260,8 @@ app.delete('/api/dishes/:id', auth, adminOnly, (req, res) => {
   res.json({ ok: true });
 });
 
-// Upload photo
-app.post('/api/dishes/:id/photo', auth, adminOnly, upload.single('photo'), (req, res) => {
+// Upload foto — admin ou gerente
+app.post('/api/dishes/:id/photo', auth, canEdit, upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhuma foto enviada' });
 
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
@@ -272,8 +278,8 @@ app.post('/api/dishes/:id/photo', auth, adminOnly, upload.single('photo'), (req,
   res.json({ photo_url: photoUrl });
 });
 
-// Delete photo
-app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
+// Remover foto — admin ou gerente
+app.delete('/api/dishes/:id/photo', auth, canEdit, (req, res) => {
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
   if (dish?.photo_url) {
     const file = path.join(UPLOADS_DIR, path.basename(dish.photo_url));
@@ -285,9 +291,9 @@ app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
-//  RECIPE ROUTES
+//  RECIPES — admin ou gerente
 // ══════════════════════════════════════════════════════
-app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
+app.post('/api/dishes/:id/recipe', auth, canEdit, (req, res) => {
   const { rendimento, tempo_preparo, tempo_forno, custo, ingredientes, modo, observacoes } = req.body;
   const dishId = parseInt(req.params.id);
   const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(dishId)?.name || '';
@@ -316,7 +322,7 @@ app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
+app.delete('/api/dishes/:id/recipe', auth, canEdit, (req, res) => {
   const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(req.params.id)?.name || '';
   const recipe = db.prepare('SELECT id FROM recipes WHERE dish_id = ?').get(req.params.id);
   if (recipe) {
@@ -327,15 +333,13 @@ app.delete('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
-//  ACTIVITY LOG ROUTES
+//  ACTIVITY LOG
 // ══════════════════════════════════════════════════════
 app.get('/api/activity', auth, (req, res) => {
-  const limit = parseInt(req.query.limit) || 50;
-  const logs = db.prepare(`
-    SELECT * FROM activity_log
-    ORDER BY created_at DESC
-    LIMIT ?
-  `).all(limit);
+  // operador não vê o log
+  if (req.user.role === 'operador') return res.status(403).json({ error: 'Sem acesso ao log' });
+  const limit = parseInt(req.query.limit) || 80;
+  const logs = db.prepare('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ?').all(limit);
   res.json(logs);
 });
 
