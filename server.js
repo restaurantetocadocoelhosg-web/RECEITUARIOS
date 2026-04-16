@@ -14,7 +14,9 @@ const APP_URL = process.env.RAILWAY_PUBLIC_DOMAIN
   : `http://localhost:${PORT}`;
 
 // ── UPLOADS DIR ─────────────────────────────────────
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const DATA_DIR = '/app/data';
+if (!fs.existsSync(DATA_DIR)) { const fs2 = require('fs'); fs2.mkdirSync(DATA_DIR, { recursive: true }); }
+const UPLOADS_DIR = require('path').join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // ── MULTER ──────────────────────────────────────────
@@ -56,6 +58,12 @@ function adminOnly(req, res, next) {
   next();
 }
 
+function canEdit(req, res, next) {
+  if (!['admin','gerente'].includes(req.user.role))
+    return res.status(403).json({ error: 'Sem permissão para editar' });
+  next();
+}
+
 // ── ACTIVITY LOG HELPER ─────────────────────────────
 function logActivity(userId, userName, action, target, details) {
   db.prepare('INSERT INTO activity_log (user_id, user_name, action, target, details) VALUES (?,?,?,?,?)')
@@ -83,18 +91,17 @@ app.get('/api/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
 // ══════════════════════════════════════════════════════
 app.get('/api/sync', auth, (req, res) => {
   const since = req.query.since || '2000-01-01';
-  // Check if any dish or recipe was updated since timestamp
-  const lastDish = db.prepare("SELECT MAX(updated_at) as t FROM dishes").get();
-  const lastRecipe = db.prepare("SELECT MAX(updated_at) as t FROM recipes").get();
+  const serverNow = new Date().toISOString();
+
+  const lastDish     = db.prepare("SELECT MAX(updated_at) as t FROM dishes").get();
+  const lastRecipe   = db.prepare("SELECT MAX(updated_at) as t FROM recipes").get();
   const lastActivity = db.prepare("SELECT MAX(created_at) as t FROM activity_log").get();
 
   const latest = [lastDish?.t, lastRecipe?.t, lastActivity?.t]
-    .filter(Boolean)
-    .sort()
-    .pop() || since;
+    .filter(Boolean).sort().pop() || since;
 
   const needsRefresh = latest > since;
-  res.json({ needsRefresh, latest });
+  res.json({ needsRefresh, latest, serverNow });
 });
 
 // ══════════════════════════════════════════════════════
@@ -129,7 +136,7 @@ app.get('/api/users', auth, adminOnly, (_, res) => {
 app.post('/api/users', auth, adminOnly, (req, res) => {
   const { name, username, password, role } = req.body;
   if (!name || !username || !password) return res.status(400).json({ error: 'Preencha todos os campos' });
-  if (!['admin', 'viewer'].includes(role)) return res.status(400).json({ error: 'Perfil inválido' });
+  if (!['admin', 'gerente', 'operador'].includes(role)) return res.status(400).json({ error: 'Perfil inválido' });
 
   try {
     const hash = bcrypt.hashSync(password, 10);
@@ -222,7 +229,7 @@ app.get('/api/dishes/:id', auth, (req, res) => {
 });
 
 // Create dish
-app.post('/api/dishes', auth, adminOnly, (req, res) => {
+app.post('/api/dishes', auth, canEdit, (req, res) => {
   const { name, category, emoji } = req.body;
   if (!name || !category) return res.status(400).json({ error: 'Nome e categoria obrigatórios' });
 
@@ -233,7 +240,7 @@ app.post('/api/dishes', auth, adminOnly, (req, res) => {
 });
 
 // Update dish
-app.put('/api/dishes/:id', auth, adminOnly, (req, res) => {
+app.put('/api/dishes/:id', auth, canEdit, (req, res) => {
   const { name, category, emoji } = req.body;
   db.prepare(`UPDATE dishes SET name=COALESCE(?,name), category=COALESCE(?,category), emoji=COALESCE(?,emoji), updated_by=?, updated_at=datetime('now','localtime') WHERE id=?`)
     .run(name, category, emoji, req.user.id, req.params.id);
@@ -242,7 +249,7 @@ app.put('/api/dishes/:id', auth, adminOnly, (req, res) => {
 });
 
 // Delete dish
-app.delete('/api/dishes/:id', auth, adminOnly, (req, res) => {
+app.delete('/api/dishes/:id', auth, canEdit, (req, res) => {
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
   if (!dish) return res.status(404).json({ error: 'Prato não encontrado' });
   if (dish.photo_url) {
@@ -255,7 +262,7 @@ app.delete('/api/dishes/:id', auth, adminOnly, (req, res) => {
 });
 
 // Upload photo
-app.post('/api/dishes/:id/photo', auth, adminOnly, upload.single('photo'), (req, res) => {
+app.post('/api/dishes/:id/photo', auth, canEdit, upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhuma foto enviada' });
 
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
@@ -273,7 +280,7 @@ app.post('/api/dishes/:id/photo', auth, adminOnly, upload.single('photo'), (req,
 });
 
 // Delete photo
-app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
+app.delete('/api/dishes/:id/photo', auth, canEdit, (req, res) => {
   const dish = db.prepare('SELECT * FROM dishes WHERE id = ?').get(req.params.id);
   if (dish?.photo_url) {
     const file = path.join(UPLOADS_DIR, path.basename(dish.photo_url));
@@ -287,7 +294,7 @@ app.delete('/api/dishes/:id/photo', auth, adminOnly, (req, res) => {
 // ══════════════════════════════════════════════════════
 //  RECIPE ROUTES
 // ══════════════════════════════════════════════════════
-app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
+app.post('/api/dishes/:id/recipe', auth, canEdit, (req, res) => {
   const { rendimento, tempo_preparo, tempo_forno, custo, ingredientes, modo, observacoes } = req.body;
   const dishId = parseInt(req.params.id);
   const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(dishId)?.name || '';
@@ -300,12 +307,14 @@ app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
       .run(rendimento, tempo_preparo, tempo_forno, custo, JSON.stringify(modo || []), observacoes, req.user.id, existing.id);
     recipeId = existing.id;
     db.prepare('DELETE FROM ingredients WHERE recipe_id = ?').run(recipeId);
-    logActivity(req.user.id, req.user.name, 'editar_receita', dishName, null);
+    const ingCount = (ingredientes || []).filter(i => i.nome?.trim()).length;
+    logActivity(req.user.id, req.user.name, 'editar_receita', dishName, `${ingCount} ingrediente(s) · ${(modo||[]).length} passo(s)`);
   } else {
     const r = db.prepare(`INSERT INTO recipes (dish_id,rendimento,tempo_preparo,tempo_forno,custo,modo,observacoes,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?)`)
       .run(dishId, rendimento, tempo_preparo, tempo_forno, custo, JSON.stringify(modo || []), observacoes, req.user.id, req.user.id);
     recipeId = r.lastInsertRowid;
-    logActivity(req.user.id, req.user.name, 'criar_receita', dishName, null);
+    const ingCount = (ingredientes || []).filter(i => i.nome?.trim()).length;
+    logActivity(req.user.id, req.user.name, 'criar_receita', dishName, `${ingCount} ingrediente(s) · ${(modo||[]).length} passo(s)`);
   }
 
   const insertIng = db.prepare('INSERT INTO ingredients (recipe_id,nome,qtd,un,ordem) VALUES (?,?,?,?,?)');
@@ -316,7 +325,7 @@ app.post('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete('/api/dishes/:id/recipe', auth, adminOnly, (req, res) => {
+app.delete('/api/dishes/:id/recipe', auth, canEdit, (req, res) => {
   const dishName = db.prepare('SELECT name FROM dishes WHERE id=?').get(req.params.id)?.name || '';
   const recipe = db.prepare('SELECT id FROM recipes WHERE dish_id = ?').get(req.params.id);
   if (recipe) {
