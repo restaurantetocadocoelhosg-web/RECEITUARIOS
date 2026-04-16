@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6b3d1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Receituário Toca">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>Receituário — Toca do Coelho</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+/* ═══ RESET & VARS ═══════════════════════════════ */
+:root{
+  --bg:#f2ece0;--surface:#fdfaf4;--border:#e0cfb0;
+  --accent:#5c3214;--accent2:#b8711e;--accent3:#e8d5a8;
+  --text:#1e1208;--muted:#7a6650;--green:#2e5c38;--red:#7a2020;
+  --radius:16px;--shadow:0 6px 32px rgba(30,18,8,.14);
+  --nav-h:68px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;height:-webkit-fill-available}
+body{
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overscroll-behavior:none;
+  -webkit-text-size-adjust:100%;
+}
+
+/* ═══ SPLASH ═════════════════════════════════════ */
+#splash{
+  position:fixed;inset:0;z-index:1000;
+  background:var(--accent);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .6s ease;overflow:hidden;
+}
+#splash::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;border:1px solid rgba(255,248,238,.07);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseRing 3s ease-in-out infinite}
+#splash::after{content:'';position:absolute;width:340px;height:340px;border-radius:50%;border:1px solid rgba(255,248,238,.11);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseRing 3s .5s ease-in-out infinite}
+@keyframes pulseRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
+#splash.hide{opacity:0;pointer-events:none}
+.splash-logo-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;animation:splashIn .8s cubic-bezier(.22,1,.36,1) both}
+.splash-img{width:min(200px,48vw);height:min(200px,48vw);border-radius:30px;box-shadow:0 16px 64px rgba(0,0,0,.4),0 0 0 1px rgba(255,248,238,.08);object-fit:cover;display:block}
+.splash-img-fallback{width:min(200px,48vw);height:min(200px,48vw);border-radius:30px;background:rgba(255,248,238,.08);display:flex;align-items:center;justify-content:center;font-size:5rem}
+.splash-brand{margin-top:28px;text-align:center}
+.splash-name{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,5vw,2.2rem);color:#fff8ee;font-weight:500;letter-spacing:.01em;line-height:1.1}
+.splash-name em{color:var(--accent2);font-style:italic}
+.splash-sub{color:rgba(255,248,238,.45);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;margin-top:10px}
+.splash-dots{display:flex;gap:8px;margin-top:40px}
+.splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,248,238,.25);animation:dotPulse 1.4s ease-in-out infinite}
+.splash-dot:nth-child(2){animation-delay:.2s}.splash-dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,100%{background:rgba(255,248,238,.2);transform:scale(1)}50%{background:rgba(255,248,238,.75);transform:scale(1.35)}}
+@keyframes splashIn{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ═══ LOGIN ══════════════════════════════════════ */
+#loginScreen{display:none;position:fixed;inset:0;z-index:900;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;padding:20px}
+#loginScreen.active{display:flex}
+.login-box{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:24px;
+  padding:40px 32px;
+  width:min(420px,100%);
+  box-shadow:var(--shadow);
+}
+.login-logo{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--accent);text-align:center;margin-bottom:4px}
+.login-logo em{color:var(--accent2);font-style:italic}
+.login-sub{text-align:center;color:var(--muted);font-size:.78rem;margin-bottom:32px;letter-spacing:.08em;text-transform:uppercase}
+.login-err{background:#fff0f0;border:1px solid #f0c0c0;color:var(--red);border-radius:10px;padding:10px 14px;font-size:.84rem;margin-bottom:16px;display:none}
+.login-err.show{display:block}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:.72rem;font-weight:600;margin-bottom:6px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.fg input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--text);background:#f9f4ea;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+.fg input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(184,113,30,.15)}
+.btn-login{width:100%;background:var(--accent);color:#fff8ee;border:none;border-radius:12px;padding:15px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;margin-top:6px;transition:background .18s,transform .1s;letter-spacing:.02em}
+.btn-login:active{transform:scale(.98)}
+.btn-login:hover{background:var(--accent2)}
+
+/* ═══ APP SHELL ══════════════════════════════════ */
+#app{display:none;flex-direction:column;height:100vh;height:100dvh}
+#app.active{display:flex}
+
+/* TOPBAR — fixed safe-area for iPhone notch */
+.topbar{
+  background:var(--accent);
+  /* Top padding: safe-area + 14px; sides: safe-area + 18px */
+  padding:calc(var(--safe-top) + 14px) calc(var(--safe-right) + 18px) 14px calc(var(--safe-left) + 18px);
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 20px rgba(0,0,0,.28);
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+  /* Ensure we extend behind the status bar */
+  margin-top:0;
+}
+.topbar-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:#fff8ee;line-height:1}
+.topbar-logo em{color:var(--accent2);font-style:italic}
+.topbar-sub{font-size:.62rem;color:rgba(255,248,238,.55);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:0}
+.user-pill{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,248,238,.15);
+  border-radius:50px;
+  padding:5px 11px 5px 10px;
+  font-size:.76rem;color:#fff8ee;
+  display:flex;align-items:center;gap:6px;
+  max-width:140px;overflow:hidden;
+}
+.user-pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role-badge{border-radius:50px;padding:2px 8px;font-size:.62rem;font-weight:700;letter-spacing:.04em;flex-shrink:0;white-space:nowrap}
+.rb-admin{background:var(--accent2);color:#fff}
+.rb-gerente{background:var(--green);color:#fff}
+.rb-operador{background:rgba(255,255,255,.22);color:#fff8ee}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4daa65;flex-shrink:0;transition:background .3s}
+.sync-dot.stale{background:var(--accent2);animation:syncPulse 1s ease infinite}
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ═══ CONTENT AREA ═══════════════════════════════ */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+.page.active{display:flex}
+
+/* CONTROLS */
+.controls{
+  padding:14px calc(var(--safe-left) + 16px) 0 calc(var(--safe-left) + 16px);
+  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
+}
+.search-wrap{position:relative}
+.search-wrap input{
+  width:100%;
+  padding:11px 16px 11px 42px;
+  border:1.5px solid var(--border);
+  border-radius:50px;
+  background:var(--surface);
+  font-family:'DM Sans',sans-serif;
+  font-size:.92rem;color:var(--text);
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;
+  box-shadow:0 2px 8px rgba(30,18,8,.06);
+}
+.search-wrap input:focus{border-color:var(--accent2);box-shadow:0 2px 12px rgba(184,113,30,.18)}
+.si{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  padding:7px 16px;
+  border:1.5px solid var(--border);
+  border-radius:50px;
+  font-size:.78rem;
+  cursor:pointer;
+  background:var(--surface);
+  color:var(--muted);
+  transition:all .18s;
+  white-space:nowrap;
+  flex-shrink:0;
+  font-weight:500;
+  box-shadow:0 1px 4px rgba(30,18,8,.06);
+}
+.chip.active,.chip:active{background:var(--accent);border-color:var(--accent);color:#fff8ee;box-shadow:0 3px 10px rgba(92,50,20,.35)}
+
+/* STATS BAR */
+.stats{
+  padding:8px calc(var(--safe-left) + 16px) 10px;
+  font-size:.74rem;color:var(--muted);
+  display:flex;gap:14px;align-items:center;flex-shrink:0;
+}
+.stats span{display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:#4daa65}.dot-no{background:var(--accent2)}
+
+/* GRID — force 2 columns on mobile */
+.grid-wrap{
+  flex:1;overflow-y:auto;
+  padding:0 calc(var(--safe-left) + 14px) calc(var(--safe-bottom) + 20px);
+  -webkit-overflow-scrolling:touch;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  padding-top:6px;
+}
+@media(min-width:480px){
+  .grid{grid-template-columns:repeat(2,1fr);gap:14px}
+}
+@media(min-width:700px){
+  .grid{grid-template-columns:repeat(3,1fr);gap:14px}
+}
+@media(min-width:1024px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .controls{flex-direction:row;align-items:center}
+  .search-wrap{flex:1;max-width:400px}
+  .chips{flex-wrap:wrap}
+}
+.card{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:transform .18s,box-shadow .18s,border-color .18s;
+  position:relative;overflow:hidden;
+  box-shadow:0 2px 10px rgba(30,18,8,.07);
+}
+.card:active{transform:scale(.96);box-shadow:var(--shadow)}
+.card-photo{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#e8dcc8}
+.card-no-photo{
+  width:100%;aspect-ratio:4/3;
+  background:linear-gradient(145deg,#ede4d0 0%,#f6edd8 50%,#e8dcc8 100%);
+  display:flex;align-items:center;justify-content:center;font-size:2.6rem;
+}
+.card-body{padding:10px 12px 12px}
+.card-badge{position:absolute;top:9px;right:9px;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2.5px rgba(255,255,255,.85)}
+.cb-ok{background:#4daa65}.cb-no{background:var(--accent2)}
+.card-name{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:500;line-height:1.3;color:var(--text)}
+.card-cat{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:4px;font-weight:500}
+.no-results{grid-column:1/-1;text-align:center;padding:52px 20px;color:var(--muted)}
+.no-results .big{font-size:2.8rem;margin-bottom:12px}
+
+/* ═══ BOTTOM NAV ═════════════════════════════════ */
+.bottom-nav{
+  display:flex;align-items:stretch;
+  background:var(--accent);
+  border-top:1px solid rgba(255,248,238,.12);
+  padding-bottom:var(--safe-bottom);
+  padding-left:var(--safe-left);
+  padding-right:var(--safe-right);
+  flex-shrink:0;
+  z-index:100;
+  box-shadow:0 -2px 20px rgba(0,0,0,.2);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:10px 4px;
+  border:none;background:none;cursor:pointer;
+  color:rgba(255,248,238,.45);
+  font-family:'DM Sans',sans-serif;font-size:.6rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  transition:color .18s,background .18s;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.nav-item:active{background:rgba(255,255,255,.08)}
+.nav-item.active{color:#fff8ee}
+.nav-item.active::after{
+  content:'';position:absolute;top:0;left:25%;right:25%;height:2.5px;
+  background:var(--accent2);border-radius:0 0 3px 3px;
+}
+.nav-icon{font-size:1.35rem;line-height:1}
+.nav-item[style*="none"]{display:none}
+
+/* ═══ MODAL ══════════════════════════════════════ */
+.overlay{display:none;position:fixed;inset:0;background:rgba(20,10,2,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+@media(min-width:768px){.overlay{align-items:center}}
+.modal{
+  background:var(--surface);
+  border-radius:24px 24px 0 0;
+  width:100%;max-width:680px;
+  max-height:94vh;max-height:94dvh;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:slideUp .28s cubic-bezier(.22,1,.36,1);
+}
+@media(min-width:768px){.modal{border-radius:24px;max-height:90vh}}
+@keyframes slideUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{
+  background:var(--accent);
+  color:#fff8ee;
+  padding:20px 20px 16px;
+  border-radius:24px 24px 0 0;
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:flex-start;justify-content:space-between;
+}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.25rem}
+.modal-cat-lbl{font-size:.65rem;opacity:.55;letter-spacing:.09em;text-transform:uppercase;margin-top:4px}
+.modal-close{
+  background:rgba(255,255,255,.16);border:none;color:#fff;
+  width:32px;height:32px;border-radius:50%;font-size:1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;transition:background .15s;
+}
+.modal-close:hover{background:rgba(255,255,255,.28)}
+.modal-body{padding:20px}
+
+/* ═══ RECIPE VIEW ════════════════════════════════ */
+.recipe-photo{width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:16px;display:block}
+.info-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.pill{background:#ede4d0;border-radius:10px;padding:7px 12px;font-size:.8rem;color:var(--accent);display:flex;align-items:center;gap:5px;font-weight:500}
+.rsec{margin-bottom:20px}
+.rsec h3{font-family:'Playfair Display',serif;font-size:.97rem;font-weight:500;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:12px}
+.ing-tbl{width:100%;border-collapse:collapse;font-size:.87rem}
+.ing-tbl thead tr{background:#ede4d0}
+.ing-tbl th{text-align:left;padding:7px 10px;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.ing-tbl td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.ing-tbl tr:last-child td{border-bottom:none}
+.steps-ol{list-style:none;counter-reset:st}
+.steps-ol li{counter-increment:st;display:flex;gap:12px;margin-bottom:12px;font-size:.88rem;line-height:1.6}
+.steps-ol li::before{content:counter(st);background:var(--accent);color:#fff8ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.notes-box{background:#fffae0;border-left:3px solid var(--accent2);border-radius:0 10px 10px 0;padding:11px 15px;font-size:.87rem;line-height:1.6;color:#5a3e10}
+.empty-st{text-align:center;padding:24px 0 12px}
+.empty-icon{font-size:2.6rem;margin-bottom:10px}
+.empty-txt{color:var(--muted);font-size:.88rem;margin-bottom:22px;line-height:1.6}
+.meta-info{background:#f0ead8;border:1px solid var(--border);border-radius:12px;padding:11px 15px;margin-bottom:18px;font-size:.78rem;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+.meta-row{display:flex;align-items:center;gap:6px}
+.meta-row .label{font-weight:700;color:var(--accent);min-width:68px}
+
+/* ═══ FORM ═══════════════════════════════════════ */
+.fsec{margin-bottom:20px}
+.fsec h3{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg label{display:block;font-size:.72rem;font-weight:600;margin-bottom:6px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.fg input,.fg textarea,.fg select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);background:#f9f4ea;outline:none;transition:border-color .2s,box-shadow .2s;resize:vertical;-webkit-appearance:none}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(184,113,30,.12)}
+.ing-hd{display:grid;grid-template-columns:1fr 72px 62px 28px;gap:6px;margin-bottom:5px}
+.ing-hd span{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:0 4px}
+.ing-row{display:grid;grid-template-columns:1fr 72px 62px 28px;gap:6px;align-items:center;margin-bottom:8px}
+.ing-row input{margin:0}
+.ing-del{background:none;border:none;color:var(--red);font-size:1.1rem;cursor:pointer;padding:0;transition:transform .15s}
+.ing-del:hover{transform:scale(1.25)}
+.add-row{background:none;border:1.5px dashed var(--border);border-radius:10px;width:100%;padding:9px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px}
+.add-row:hover{border-color:var(--accent);color:var(--accent)}
+.photo-btns{display:flex;gap:8px;margin-bottom:10px}
+.photo-btn{flex:1;padding:12px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;font-weight:500}
+.photo-btn:hover{border-color:var(--accent);background:#f0e8d8}
+.photo-preview-wrap{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#ede4d0;margin-bottom:8px;border:1.5px solid var(--border)}
+.photo-preview-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-no-preview{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#ede4d0,#f5edd8);border-radius:14px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:.84rem;gap:7px;margin-bottom:8px}
+.photo-no-preview span{font-size:2.2rem}
+.crop-container{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#111;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.crop-container:active{cursor:grabbing}
+.crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none;will-change:transform}
+.crop-hint{text-align:center;color:var(--muted);font-size:.78rem;margin:9px 0 14px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* BTNS */
+.btn{border:none;border-radius:11px;padding:12px 22px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .18s}
+.btn-pri{background:var(--accent);color:#fff8ee}.btn-pri:hover{background:var(--accent2)}
+.btn-sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}.btn-sec:hover{background:var(--accent);color:#fff8ee}
+.btn-dan{background:transparent;color:var(--red);border:1.5px solid var(--red);margin-left:auto}.btn-dan:hover{background:var(--red);color:#fff}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;align-items:center}
+
+/* ═══ ADMIN PAGE ═════════════════════════════════ */
+.admin-page{flex:1;overflow-y:auto;padding:0 0 20px;-webkit-overflow-scrolling:touch}
+.admin-header{background:var(--accent);padding:20px calc(var(--safe-right) + 20px) 0 calc(var(--safe-left) + 20px);color:#fff8ee}
+.admin-header h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:4px}
+.admin-header p{font-size:.74rem;opacity:.6;letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
+.admin-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.admin-tabs::-webkit-scrollbar{display:none}
+.atab{background:none;border:none;padding:11px 16px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;color:rgba(255,248,238,.5);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .18s;white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
+.atab:hover{color:#fff8ee}
+.atab.active{color:#fff8ee;border-bottom-color:var(--accent2)}
+.admin-body{padding:20px}
+.admin-tab-content{display:none}.admin-tab-content.active{display:block}
+.admin-section{margin-bottom:28px}
+.admin-section h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--accent);margin-bottom:14px;padding-bottom:7px;border-bottom:1.5px solid var(--border)}
+
+/* USER LIST */
+.user-list{display:flex;flex-direction:column;gap:8px}
+.user-item{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.user-item-name{font-weight:600;font-size:.9rem}
+.user-item-info{font-size:.76rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
+.badge-admin{background:var(--accent2);color:#fff;border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:700}
+.badge-gerente{background:var(--green);color:#fff;border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:700}
+.badge-operador{background:#e0d5c0;color:var(--muted);border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:600}
+.user-actions{display:flex;gap:6px;flex-shrink:0}
+.btn-sm{border:none;border-radius:8px;padding:7px 13px;font-size:.78rem;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:600}
+.btn-sm-edit{background:#e8d5b0;color:var(--accent)}.btn-sm-edit:hover{background:var(--accent);color:#fff}
+.btn-sm-del{background:#f5dada;color:var(--red)}.btn-sm-del:hover{background:var(--red);color:#fff}
+
+/* STATUS TAG NO CARD */
+.card-status-tag{
+  position:absolute;top:8px;left:8px;
+  border-radius:6px;padding:3px 8px;
+  font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.cst-ok{background:rgba(46,92,56,.82);color:#d4f5dc}
+.cst-no{background:rgba(184,113,30,.82);color:#fff3dc}
+
+/* BOTÃO EDITAR RÁPIDO NO CARD */
+.card-edit-btn{
+  position:absolute;bottom:10px;right:9px;
+  background:rgba(92,50,20,.12);
+  border:1px solid rgba(92,50,20,.2);
+  border-radius:7px;
+  padding:3px 7px;font-size:.75rem;
+  cursor:pointer;color:var(--accent);
+  transition:all .15s;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+}
+.card-edit-btn:active{background:var(--accent);color:#fff}
+.card-body{position:relative;padding:10px 12px 28px}
+
+/* FILTROS DE STATUS CLICÁVEIS */
+.stat-filter{
+  display:flex;align-items:center;gap:5px;
+  cursor:pointer;border-radius:6px;
+  padding:3px 8px 3px 4px;
+  transition:all .15s;
+  border:1.5px solid transparent;
+  font-weight:500;
+}
+.stat-filter:active{transform:scale(.96)}
+.stat-filter-active{background:#e8f5ec;border-color:#4daa65;color:#2e5c38;font-weight:700}
+.stat-filter-active-no{background:#fef3e2;border-color:var(--accent2);color:var(--accent2)}
+
+
+.dish-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dish-item{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dish-item-name{font-weight:600;font-size:.88rem}
+.dish-item-info{font-size:.73rem;color:var(--muted);margin-top:1px}
+.dish-filter-row{display:flex;gap:8px;margin-bottom:10px}
+.dish-filter-row input{flex:1;padding:8px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;-webkit-appearance:none}
+.dish-filter-row input:focus{border-color:var(--accent2)}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px}
+.stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--accent);line-height:1}
+.stat-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;font-weight:500}
+.cat-bar-wrap{margin-bottom:9px}
+.cat-bar-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text);margin-bottom:4px}
+.cat-bar{height:8px;background:#e8d5b0;border-radius:50px;overflow:hidden}
+.cat-bar-fill{height:100%;background:var(--accent);border-radius:50px;transition:width .4s ease}
+
+/* LOG */
+.log-list{display:flex;flex-direction:column;gap:7px}
+.log-item{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px}
+.log-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px}
+.log-content{flex:1;min-width:0}
+.log-action{font-size:.85rem;font-weight:500;color:var(--text)}
+.log-action strong{color:var(--accent)}
+.log-target{color:var(--accent2);font-weight:600}
+.log-time{font-size:.72rem;color:var(--muted);margin-top:3px}
+.log-empty{text-align:center;padding:30px;color:var(--muted);font-size:.88rem}
+
+/* PERFIL PAGE */
+.perfil-page{flex:1;overflow-y:auto;padding:20px calc(var(--safe-right)+16px) 20px calc(var(--safe-left)+16px);-webkit-overflow-scrolling:touch}
+.perfil-card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:28px;margin-bottom:14px;text-align:center;box-shadow:0 2px 12px rgba(30,18,8,.07)}
+.perfil-avatar{width:76px;height:76px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 16px;box-shadow:var(--shadow)}
+.perfil-name{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--accent);margin-bottom:4px}
+.perfil-username{font-size:.82rem;color:var(--muted);margin-bottom:14px}
+.perfil-role-tag{display:inline-block;border-radius:50px;padding:4px 18px;font-size:.8rem;font-weight:700}
+.perfil-section{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,18,8,.05)}
+.perfil-section h3{font-family:'Playfair Display',serif;font-size:.97rem;color:var(--accent);margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid var(--border)}
+.perm-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.87rem}
+.perm-item:last-child{border-bottom:none}
+.perm-icon{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0}
+.perm-ok{color:var(--green)}.perm-no{color:#ccc}
+.btn-logout{width:100%;padding:14px;border:1.5px solid var(--red);border-radius:12px;background:none;color:var(--red);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .18s;margin-top:6px}
+.btn-logout:hover{background:var(--red);color:#fff}
+
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:calc(var(--nav-h) + 20px + var(--safe-bottom));
+  left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--accent);
+  color:#fff8ee;
+  padding:11px 24px;
+  border-radius:50px;
+  font-size:.84rem;
+  font-weight:500;
+  opacity:0;
+  transition:all .3s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:500;
+  box-shadow:0 4px 20px rgba(30,18,8,.35);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.loader{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:10px;font-size:.9rem}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* BACKUP TAB */
+.backup-status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.bstat-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center}
+.bstat-icon{font-size:1.4rem;margin-bottom:4px}
+.bstat-label{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.bstat-val{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--accent);margin-top:2px}
+.backup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.backup-name{font-size:.86rem;font-weight:600;color:var(--text)}
+.backup-meta{font-size:.73rem;color:var(--muted);margin-top:2px}
+
+@media(min-width:768px){
+  .recipe-desktop{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+  .recipe-desktop .recipe-photo{margin-bottom:0}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo-wrap">
+    <img class="splash-img" src="/banner.png"
+         onerror="this.outerHTML='<div class=\'splash-img-fallback\'>🐰</div>'"
+         alt="Toca do Coelho">
+    <div class="splash-brand">
+      <div class="splash-name">Toca do <em>Coelho</em></div>
+      <div class="splash-sub">Receituário de Cozinha</div>
+    </div>
+    <div class="splash-dots">
+      <div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Toca do <em>Coelho</em></div>
+    <div class="login-sub">Receituário de Cozinha</div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="fg"><label>Usuário</label><input type="text" id="loginUser" placeholder="seu usuário" autocomplete="username"></div>
+    <div class="fg"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">Toca do <em>Coelho</em></div>
+      <div class="topbar-sub" id="pageTitle">Receituário</div>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-dot" id="syncDot" title="Sincronizado"></div>
+      <div class="user-pill">
+        <span id="userName">–</span>
+        <span class="role-badge" id="userRoleBadge">–</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: RECEITUÁRIO -->
+  <div class="page active" id="pageReceitas">
+    <div class="controls">
+      <div class="search-wrap">
+        <span class="si">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar prato…" oninput="renderGrid()">
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  </div>
+
+  <!-- PAGE: ADMIN / GERENTE -->
+  <div class="page" id="pageAdmin">
+    <div class="admin-page">
+      <div class="admin-header">
+        <h2 id="adminPanelTitle">⚙️ Painel Admin</h2>
+        <p id="adminPanelSub">Gerenciar receituário</p>
+        <div class="admin-tabs" id="adminTabs">
+          <button class="atab active" onclick="switchAdminTab('users')" id="tabBtnUsers">👥 Usuários</button>
+          <button class="atab" onclick="switchAdminTab('dishes')" id="tabBtnDishes">🍽️ Pratos</button>
+          <button class="atab" onclick="switchAdminTab('stats')" id="tabBtnStats">📊 Estatísticas</button>
+          <button class="atab" onclick="switchAdminTab('activity')" id="tabBtnActivity">📋 Atividades</button>
+          <button class="atab" onclick="switchAdminTab('backup')" id="tabBtnBackup">💾 Backup</button>
+        </div>
+      </div>
+      <div class="admin-body">
+
+        <!-- TAB USUÁRIOS (admin only) -->
+        <div class="admin-tab-content active" id="tabUsers">
+          <div class="admin-section">
+            <h3>Usuários Cadastrados</h3>
+            <div class="user-list" id="userList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+          <div class="admin-section">
+            <h3>Novo Usuário</h3>
+            <div class="fg2">
+              <div class="fg"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo"></div>
+              <div class="fg"><label>Usuário</label><input type="text" id="nuUser" placeholder="login"></div>
+            </div>
+            <div class="fg2">
+              <div class="fg"><label>Senha</label><input type="password" id="nuPass" placeholder="senha"></div>
+              <div class="fg"><label>Perfil</label>
+                <select id="nuRole">
+                  <option value="operador">Operador (só leitura)</option>
+                  <option value="gerente">Gerente (edita pratos/receitas)</option>
+                  <option value="admin">Admin (acesso total)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-pri" onclick="createUser()">Criar Usuário</button>
+          </div>
+        </div>
+
+        <!-- TAB PRATOS -->
+        <div class="admin-tab-content" id="tabDishes">
+          <div class="admin-section">
+            <h3>Gerenciar Pratos</h3>
+            <div class="dish-filter-row">
+              <input type="text" id="dishSearch" placeholder="🔍 Buscar prato…" oninput="renderAdminDishes()">
+            </div>
+            <div class="dish-list" id="adminDishList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+          <div class="admin-section">
+            <h3>Novo Prato</h3>
+            <div class="fg"><label>Nome do Prato *</label><input type="text" id="ndName" placeholder="Ex: Frango Assado"></div>
+            <div class="fg"><label>Categoria</label>
+              <select id="ndCat">
+                <option>Molhos e Caldos</option><option>Proteína Bovina</option><option>Proteína Ave</option>
+                <option>Proteína Suína</option><option>Peixe / Frutos do Mar</option><option selected>Acompanhamento</option>
+                <option>Quiche / Torta</option><option>Massa / Nhoque</option><option>Salada</option>
+                <option>Sobremesa</option><option>Outro</option>
+              </select>
+            </div>
+            <div class="fg"><label>Emoji (opcional)</label><input type="text" id="ndEmoji" placeholder="🍗" maxlength="4"></div>
+            <button class="btn btn-pri" onclick="adminAddDish()">Criar Prato</button>
+          </div>
+        </div>
+
+        <!-- TAB ESTATÍSTICAS -->
+        <div class="admin-tab-content" id="tabStats">
+          <div class="admin-section">
+            <h3>Resumo Geral</h3>
+            <div class="stat-grid" id="statGrid"></div>
+            <h3 style="margin-top:4px">Por Categoria</h3>
+            <div id="statCats"></div>
+          </div>
+        </div>
+
+        <!-- TAB ATIVIDADES -->
+        <div class="admin-tab-content" id="tabActivity">
+          <div class="admin-section">
+            <h3>Registro de Atividades</h3>
+            <div class="log-list" id="activityLog"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+
+        <!-- TAB BACKUP -->
+        <div class="admin-tab-content" id="tabBackup">
+          <div class="admin-section">
+            <h3>Status do Banco de Dados</h3>
+            <div id="backupStatus"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+          <div class="admin-section">
+            <h3>Download Manual</h3>
+            <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;line-height:1.55">Baixa uma cópia completa do banco agora. Guarde no seu computador como segurança extra.</p>
+            <button class="btn btn-pri" onclick="downloadBackup()">⬇️ Baixar Banco Agora</button>
+          </div>
+          <div class="admin-section">
+            <h3>Backups Automáticos</h3>
+            <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;line-height:1.55">O sistema cria um backup automático a cada 6 horas. Os 20 mais recentes ficam guardados.</p>
+            <div id="backupList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: PERFIL -->
+  <div class="page" id="pagePerfil">
+    <div class="perfil-page">
+      <div class="perfil-card">
+        <div class="perfil-avatar" id="perfilAvatar">👤</div>
+        <div class="perfil-name" id="perfilName">–</div>
+        <div class="perfil-username" id="perfilUsername">–</div>
+        <span class="perfil-role-tag" id="perfilRoleTag">–</span>
+      </div>
+      <div class="perfil-section">
+        <h3>Permissões do seu perfil</h3>
+        <div id="perfilPermList"></div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">🚪 Sair da conta</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="navReceitas" onclick="showPage('receitas')">
+      <span class="nav-icon">📖</span>Receituário
+    </button>
+    <button class="nav-item" id="navAdmin" onclick="showPage('admin')" style="display:none">
+      <span class="nav-icon">⚙️</span><span id="navAdminLabel">Admin</span>
+    </button>
+    <button class="nav-item" id="navPerfil" onclick="showPage('perfil')">
+      <span class="nav-icon">👤</span>Perfil
+    </button>
+  </nav>
+</div>
+
+<!-- Recipe Modal -->
+<div class="overlay" id="recipeOverlay" onclick="bgClose(event,'recipeOverlay')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title" id="mTitle">–</div>
+        <div class="modal-cat-lbl" id="mCat">–</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('recipeOverlay')">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<!-- Edit Dish Modal -->
+<div class="overlay" id="editDishOverlay" onclick="bgClose(event,'editDishOverlay')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div><div class="modal-title">✏️ Editar Prato</div></div>
+      <button class="modal-close" onclick="closeModal('editDishOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edId">
+      <div class="fg"><label>Nome do Prato</label><input type="text" id="edName" placeholder="Nome"></div>
+      <div class="fg"><label>Categoria</label>
+        <select id="edCat">
+          <option>Molhos e Caldos</option><option>Proteína Bovina</option><option>Proteína Ave</option>
+          <option>Proteína Suína</option><option>Peixe / Frutos do Mar</option><option>Acompanhamento</option>
+          <option>Quiche / Torta</option><option>Massa / Nhoque</option><option>Salada</option>
+          <option>Sobremesa</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="fg"><label>Emoji</label><input type="text" id="edEmoji" maxlength="4" placeholder="🍽️"></div>
+      <div class="btn-row">
+        <button class="btn btn-pri" onclick="saveAdminDish()">Salvar</button>
+        <button class="btn btn-sec" onclick="closeModal('editDishOverlay')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="overlay" id="editUserOverlay" onclick="bgClose(event,'editUserOverlay')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div><div class="modal-title">Editar Usuário</div></div>
+      <button class="modal-close" onclick="closeModal('editUserOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="euId">
+      <div class="fg"><label>Nome</label><input type="text" id="euName" placeholder="Nome"></div>
+      <div class="fg"><label>Nova Senha (deixe vazio para manter)</label><input type="password" id="euPass" placeholder="nova senha"></div>
+      <div class="fg"><label>Perfil</label>
+        <select id="euRole">
+          <option value="operador">Operador (só leitura)</option>
+          <option value="gerente">Gerente (edita pratos/receitas)</option>
+          <option value="admin">Admin (acesso total)</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-pri" onclick="saveUser()">Salvar</button>
+        <button class="btn btn-sec" onclick="closeModal('editUserOverlay')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Photo Crop Modal -->
+<div class="overlay" id="cropOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div><div class="modal-title">📷 Ajustar Foto</div><div class="modal-cat-lbl">Arraste para reposicionar</div></div>
+      <button class="modal-close" onclick="cancelCrop()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="crop-container" id="cropContainer"><img id="cropImg" alt=""></div>
+      <div class="crop-hint">☝️ Arraste a foto para ajustar o enquadramento</div>
+      <div class="btn-row">
+        <button class="btn btn-pri" onclick="confirmCrop()">✅ Confirmar</button>
+        <button class="btn btn-sec" onclick="cancelCrop()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso.replace(' ', 'T'));
+    if (isNaN(d)) return iso;
+    const day = String(d.getDate()).padStart(2,'0');
+    const mon = String(d.getMonth()+1).padStart(2,'0');
+    const yr = d.getFullYear();
+    const hr = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    return `${day}/${mon}/${yr} às ${hr}:${min}`;
+  } catch { return iso; }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function bgClose(e, id) { if (e.target.id === id) closeModal(id); }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let token = localStorage.getItem('tc_token');
+let currentUser = JSON.parse(localStorage.getItem('tc_user') || 'null');
+let dishes = [];
+let currentDish = null;
+let editing = false;
+let activeFilter = 'Todos';
+let statusFilter = 'todos'; // 'todos' | 'com' | 'sem'
+let ingData = [];
+let pendingPhoto = null;
+let lastSyncTime = '2000-01-01';
+let syncInterval = null;
+let currentAdminTab = 'users';
+
+const isAdmin   = () => currentUser?.role === 'admin';
+const isGerente = () => currentUser?.role === 'gerente';
+const canEdit   = () => ['admin','gerente'].includes(currentUser?.role);
+
+// ══════════════════════════════════════════
+//  API
+// ══════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  if (res.status === 401) { doLogout(); return; }
+  return res.json();
+}
+
+async function apiUpload(path, file) {
+  const fd = new FormData();
+  fd.append('photo', file);
+  const res = await fetch('/api' + path, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: fd,
+  });
+  return res.json();
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const pageTitles = {
+  receitas: 'Receituário',
+  admin: isAdmin() ? 'Admin' : 'Gerente',
+  perfil: 'Meu Perfil',
+};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  if (page === 'receitas') {
+    document.getElementById('pageReceitas').classList.add('active');
+    document.getElementById('navReceitas').classList.add('active');
+    document.getElementById('pageTitle').textContent = 'Receituário';
+  } else if (page === 'admin') {
+    document.getElementById('pageAdmin').classList.add('active');
+    document.getElementById('navAdmin').classList.add('active');
+    document.getElementById('pageTitle').textContent = isAdmin() ? 'Painel Admin' : 'Painel Gerente';
+    loadCurrentAdminTab();
+  } else if (page === 'perfil') {
+    document.getElementById('pagePerfil').classList.add('active');
+    document.getElementById('navPerfil').classList.add('active');
+    document.getElementById('pageTitle').textContent = 'Meu Perfil';
+  }
+}
+
+// ══════════════════════════════════════════
+//  SYNC — mais robusto
+// ══════════════════════════════════════════
+async function checkSync() {
+  try {
+    const data = await api('GET', `/sync?since=${encodeURIComponent(lastSyncTime)}`);
+    if (!data) return;
+    const dot = document.getElementById('syncDot');
+    if (data.needsRefresh) {
+      dot.classList.add('stale');
+      await loadDishes();
+      lastSyncTime = data.serverNow || data.latest;
+      dot.classList.remove('stale');
+      dot.title = 'Sincronizado — ' + fmtDate(data.latest);
+    } else {
+      // Atualiza o lastSyncTime para o tempo do servidor mesmo sem mudanças
+      if (data.serverNow) lastSyncTime = data.serverNow;
+      dot.title = 'Sincronizado';
+    }
+  } catch(e) {
+    document.getElementById('syncDot').classList.add('stale');
+  }
+}
+
+function startSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(checkSync, 15000);
+}
+
+function stopSync() {
+  if (syncInterval) clearInterval(syncInterval);
+}
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.classList.remove('show');
+  if (!username || !password) { err.textContent = 'Preencha usuário e senha.'; err.classList.add('show'); return; }
+
+  const data = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  }).then(r => r.json());
+
+  if (data.error) { err.textContent = data.error; err.classList.add('show'); return; }
+
+  token = data.token;
+  currentUser = data.user;
+  localStorage.setItem('tc_token', token);
+  localStorage.setItem('tc_user', JSON.stringify(currentUser));
+  startApp();
+}
+
+document.getElementById('loginPass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  stopSync();
+  token = null; currentUser = null;
+  localStorage.removeItem('tc_token');
+  localStorage.removeItem('tc_user');
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      if (token) startApp(); else document.getElementById('loginScreen').classList.add('active');
+    }, 500);
+  }, 1800);
+});
+
+const ROLE_LABELS = { admin: 'Admin', gerente: 'Gerente', operador: 'Operador' };
+const ROLE_BADGE_CLASS = { admin: 'rb-admin', gerente: 'rb-gerente', operador: 'rb-operador' };
+const ROLE_TAG_STYLE = {
+  admin: 'background:var(--accent2);color:#fff',
+  gerente: 'background:var(--green);color:#fff',
+  operador: 'background:#e0d5c0;color:var(--muted)',
+};
+
+async function startApp() {
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+
+  // topbar
+  document.getElementById('userName').textContent = currentUser.name.split(' ')[0];
+  const badge = document.getElementById('userRoleBadge');
+  badge.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+  badge.className = 'role-badge ' + (ROLE_BADGE_CLASS[currentUser.role] || '');
+
+  // nav visibility
+  if (canEdit()) {
+    const navAdmin = document.getElementById('navAdmin');
+    navAdmin.style.display = 'flex';
+    document.getElementById('navAdminLabel').textContent = isAdmin() ? 'Admin' : 'Gerente';
+    // admin panel title
+    document.getElementById('adminPanelTitle').textContent = isAdmin() ? '⚙️ Painel Admin' : '⚙️ Painel Gerente';
+    document.getElementById('adminPanelSub').textContent = isAdmin() ? 'Gestão completa' : 'Pratos e receitas';
+    // hide users tab for gerente
+    if (!isAdmin()) {
+      document.getElementById('tabBtnUsers').style.display = 'none';
+      // show dishes tab as first active
+      switchAdminTab('dishes');
+    }
+  }
+
+  // perfil page
+  renderPerfil();
+
+  await loadDishes();
+  startSync();
+}
+
+// ══════════════════════════════════════════
+//  PERFIL PAGE
+// ══════════════════════════════════════════
+function renderPerfil() {
+  const u = currentUser;
+  document.getElementById('perfilName').textContent = u.name;
+  document.getElementById('perfilUsername').textContent = '@' + u.username;
+  const roleTag = document.getElementById('perfilRoleTag');
+  roleTag.textContent = ROLE_LABELS[u.role] || u.role;
+  roleTag.style.cssText = ROLE_TAG_STYLE[u.role] || '';
+
+  const emojis = { admin: '👑', gerente: '🍳', operador: '👀' };
+  document.getElementById('perfilAvatar').textContent = emojis[u.role] || '👤';
+
+  const perms = [
+    { ok: true, label: 'Visualizar receitas e pratos' },
+    { ok: canEdit(), label: 'Criar e editar pratos' },
+    { ok: canEdit(), label: 'Criar e editar receitas' },
+    { ok: canEdit(), label: 'Enviar fotos de pratos' },
+    { ok: isAdmin(), label: 'Gerenciar usuários' },
+    { ok: isAdmin(), label: 'Ver log de atividades' },
+    { ok: isAdmin(), label: 'Excluir pratos' },
+  ];
+
+  document.getElementById('perfilPermList').innerHTML = perms.map(p => `
+    <div class="perm-item">
+      <span class="perm-icon ${p.ok ? 'perm-ok' : 'perm-no'}">${p.ok ? '✅' : '🔒'}</span>
+      <span style="color:${p.ok ? 'var(--text)' : 'var(--muted)'}">${p.label}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  DISHES
+// ══════════════════════════════════════════
+async function loadDishes() {
+  const grid = document.getElementById('grid');
+  if (!dishes.length) grid.innerHTML = '<div class="loader"><div class="spinner"></div>Carregando…</div>';
+  const data = await api('GET', '/dishes');
+  if (!data) return;
+  dishes = data;
+  renderChips();
+  renderGrid();
+  renderStats();
+}
+
+function renderChips() {
+  const cats = ['Todos', ...new Set(dishes.map(d => d.category))];
+  document.getElementById('chips').innerHTML = cats.map(c =>
+    `<span class="chip ${c === activeFilter ? 'active' : ''}" onclick="setFilter('${esc(c)}')">${esc(c)}</span>`
+  ).join('');
+}
+
+function setFilter(c) { activeFilter = c; renderChips(); renderGrid(); }
+function setStatusFilter(s) { statusFilter = s; renderStats(); renderGrid(); }
+
+function renderStats() {
+  const ok = dishes.filter(d => d.has_recipe).length;
+  const no = dishes.length - ok;
+  document.getElementById('stats').innerHTML = `
+    <span class="stat-filter ${statusFilter==='com'?'stat-filter-active':''}" onclick="setStatusFilter(statusFilter==='com'?'todos':'com')">
+      <div class="dot dot-ok"></div>${ok} com receita
+    </span>
+    <span class="stat-filter ${statusFilter==='sem'?'stat-filter-active stat-filter-active-no':''}" onclick="setStatusFilter(statusFilter==='sem'?'todos':'sem')">
+      <div class="dot dot-no"></div>${no} sem receita
+    </span>
+    <span style="margin-left:auto;font-size:.7rem">${dishes.length} pratos</span>`;
+}
+
+function renderGrid() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const list = dishes.filter(d =>
+    (activeFilter === 'Todos' || d.category === activeFilter) &&
+    (statusFilter === 'todos' || (statusFilter === 'com' ? d.has_recipe : !d.has_recipe)) &&
+    (!q || d.name.toLowerCase().includes(q))
+  );
+  const g = document.getElementById('grid');
+  if (!list.length) {
+    g.innerHTML = '<div class="no-results"><div class="big">🍽️</div>Nenhum prato encontrado.</div>';
+    return;
+  }
+  g.innerHTML = list.map(d => `
+    <div class="card" onclick="openDish(${d.id})">
+      <div class="card-status-tag ${d.has_recipe ? 'cst-ok' : 'cst-no'}">${d.has_recipe ? '✓ Pronto' : 'Pendente'}</div>
+      ${d.photo_url
+        ? `<img class="card-photo" src="${esc(d.photo_url)}" alt="${esc(d.name)}" loading="lazy">`
+        : `<div class="card-no-photo">${d.emoji || '🍽️'}</div>`
+      }
+      <div class="card-body">
+        <div class="card-name">${esc(d.name)}</div>
+        <div class="card-cat">${esc(d.category)}</div>
+        ${canEdit() ? `<button class="card-edit-btn" onclick="event.stopPropagation();quickEditDish(${d.id},'${esc(d.name).replace(/'/g,"\\'")}','${esc(d.category)}','${esc(d.emoji||'')}')">✏️</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Quick edit dish from main grid
+function quickEditDish(id, name, category, emoji) {
+  openEditDish(id, name, category, emoji);
+}
+
+async function openDish(id) {
+  editing = false; pendingPhoto = null;
+  document.getElementById('mBody').innerHTML = '<div class="loader"><div class="spinner"></div>Carregando…</div>';
+  document.getElementById('recipeOverlay').classList.add('open');
+
+  const data = await api('GET', `/dishes/${id}`);
+  if (!data) return;
+  currentDish = data;
+  document.getElementById('mTitle').textContent = data.name;
+  document.getElementById('mCat').textContent = data.category;
+  renderDishBody();
+}
+
+function renderDishBody() {
+  const d = currentDish;
+  const b = document.getElementById('mBody');
+
+  if (editing) { renderEditForm(); return; }
+
+  if (!d.recipe) {
+    b.innerHTML = `
+      ${d.photo_url ? `<img class="recipe-photo" src="${esc(d.photo_url)}" alt="${esc(d.name)}">` : ''}
+      <div class="empty-st">
+        <div class="empty-icon">📋</div>
+        <p class="empty-txt">Este prato ainda não tem receituário.<br>Quer preencher agora?</p>
+        <div class="btn-row" style="justify-content:center">
+          ${canEdit() ? `<button class="btn btn-pri" onclick="startEdit()">✏️ Preencher Receita</button>` : ''}
+        </div>
+      </div>`;
+    return;
+  }
+
+  const r = d.recipe;
+  b.innerHTML = `
+    <div class="${d.photo_url ? 'recipe-desktop' : ''}">
+      ${d.photo_url ? `<img class="recipe-photo" src="${esc(d.photo_url)}" alt="${esc(d.name)}">` : ''}
+      <div>
+        <div class="meta-info">
+          ${r.created_by_name ? `<div class="meta-row"><span class="label">Criado:</span><span>${esc(r.created_by_name)} · ${fmtDate(r.created_at)}</span></div>` : ''}
+          ${r.updated_by_name ? `<div class="meta-row"><span class="label">Editado:</span><span>${esc(r.updated_by_name)} · ${fmtDate(r.updated_at)}</span></div>` : ''}
+        </div>
+
+        ${(r.rendimento || r.tempo_preparo || r.tempo_forno || r.custo) ? `
+        <div class="info-pills">
+          ${r.rendimento ? `<span class="pill">🍽️ ${esc(r.rendimento)}</span>` : ''}
+          ${r.tempo_preparo ? `<span class="pill">⏱ ${esc(r.tempo_preparo)}</span>` : ''}
+          ${r.tempo_forno ? `<span class="pill">🔥 ${esc(r.tempo_forno)}</span>` : ''}
+          ${r.custo ? `<span class="pill">💰 R$${esc(r.custo)}/porção</span>` : ''}
+        </div>` : ''}
+
+        ${r.ingredientes?.length ? `
+        <div class="rsec">
+          <h3>🧂 Ingredientes</h3>
+          <table class="ing-tbl">
+            <thead><tr><th>Ingrediente</th><th>Qtd</th><th>Un.</th></tr></thead>
+            <tbody>${r.ingredientes.map(i => `<tr><td>${esc(i.nome)}</td><td>${esc(i.qtd)}</td><td>${esc(i.un)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>` : ''}
+
+        ${r.modo?.length ? `
+        <div class="rsec">
+          <h3>👨‍🍳 Modo de Preparo</h3>
+          <ol class="steps-ol">${r.modo.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+        </div>` : ''}
+
+        ${r.observacoes ? `
+        <div class="rsec">
+          <h3>📝 Observações</h3>
+          <div class="notes-box">${esc(r.observacoes)}</div>
+        </div>` : ''}
+      </div>
+    </div>
+    ${canEdit() ? `
+    <div class="btn-row">
+      <button class="btn btn-pri" onclick="startEdit()">✏️ Editar Receita</button>
+      ${isAdmin() ? `<button class="btn btn-dan" onclick="deleteRecipe()">🗑 Apagar Receita</button>` : ''}
+    </div>` : ''}`;
+}
+
+function startEdit() {
+  const r = currentDish.recipe || {};
+  ingData = (r.ingredientes?.length) ? r.ingredientes.map(i => ({ ...i })) : [{}];
+  editing = true;
+  renderEditForm();
+}
+
+function renderEditForm() {
+  const d = currentDish;
+  const r = d.recipe || {};
+  const b = document.getElementById('mBody');
+
+  b.innerHTML = `
+    <div class="fsec">
+      <h3>📸 Foto do Prato</h3>
+      ${d.photo_url
+        ? `<div class="photo-preview-wrap"><img id="photoPreview" src="${esc(d.photo_url)}" alt="${esc(d.name)}"></div>`
+        : `<div class="photo-no-preview"><span>🍽️</span>Nenhuma foto ainda</div>`
+      }
+      <input type="file" id="photoCameraInput" accept="image/*" capture="environment" style="display:none" onchange="startCrop(event)">
+      <input type="file" id="photoGalleryInput" accept="image/*" style="display:none" onchange="startCrop(event)">
+      <div class="photo-btns">
+        <button class="photo-btn" onclick="document.getElementById('photoCameraInput').click()">📷 Câmera</button>
+        <button class="photo-btn" onclick="document.getElementById('photoGalleryInput').click()">🖼️ Galeria</button>
+        ${d.photo_url ? `<button class="photo-btn" style="flex:0.6;color:var(--red);border-color:var(--red)" onclick="removePhoto()">🗑</button>` : ''}
+      </div>
+    </div>
+
+    <div class="fsec">
+      <h3>⏱ Informações Gerais</h3>
+      <div class="fg2">
+        <div class="fg"><label>Rendimento / Porções</label><input type="text" id="fR" value="${esc(r.rendimento||'')}" placeholder="Ex: 4 porções"></div>
+        <div class="fg"><label>Tempo de Preparo</label><input type="text" id="fTP" value="${esc(r.tempo_preparo||'')}" placeholder="Ex: 20 min"></div>
+        <div class="fg"><label>Tempo Forno / Cozimento</label><input type="text" id="fTF" value="${esc(r.tempo_forno||'')}" placeholder="Ex: 1h a 180°C"></div>
+        <div class="fg"><label>Custo por Porção (R$)</label><input type="text" id="fC" value="${esc(r.custo||'')}" placeholder="Ex: 8,50"></div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <h3>🧂 Ingredientes</h3>
+      <div class="ing-hd"><span>Ingrediente</span><span>Qtd</span><span>Un.</span><span></span></div>
+      <div id="ingList">${ingData.map((ig, i) => ingRowHTML(i, ig)).join('')}</div>
+      <button class="add-row" onclick="addIngRow()">＋ Adicionar ingrediente</button>
+    </div>
+
+    <div class="fsec">
+      <h3>👨‍🍳 Modo de Preparo</h3>
+      <p style="font-size:.76rem;color:var(--muted);margin-bottom:8px">Um passo por linha.</p>
+      <div class="fg"><textarea id="fM" rows="8" placeholder="1. Tempere o frango…&#10;2. Leve ao forno…">${esc((r.modo || []).join('\n'))}</textarea></div>
+    </div>
+
+    <div class="fsec">
+      <h3>📝 Observações</h3>
+      <div class="fg"><textarea id="fO" rows="3" placeholder="Dicas, alergênicos, variações…">${esc(r.observacoes||'')}</textarea></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-pri" onclick="saveRecipe()">💾 Salvar Receita</button>
+      <button class="btn btn-sec" onclick="cancelEdit()">Cancelar</button>
+    </div>`;
+}
+
+function ingRowHTML(i, ig = {}) {
+  return `<div class="ing-row" id="ir${i}">
+    <input type="text" placeholder="Ingrediente" value="${esc(ig.nome||'')}" oninput="updateIng(${i},'nome',this.value)">
+    <input type="text" placeholder="1" value="${esc(ig.qtd||'')}" oninput="updateIng(${i},'qtd',this.value)">
+    <input type="text" placeholder="kg" value="${esc(ig.un||'')}" oninput="updateIng(${i},'un',this.value)">
+    <button class="ing-del" onclick="removeIng(${i})">✕</button>
+  </div>`;
+}
+
+function updateIng(i, f, v) { if (!ingData[i]) ingData[i] = {}; ingData[i][f] = v; }
+
+function syncIng() {
+  document.querySelectorAll('.ing-row').forEach((row, i) => {
+    if (!ingData[i]) ingData[i] = {};
+    const ins = row.querySelectorAll('input');
+    ingData[i].nome = ins[0].value;
+    ingData[i].qtd = ins[1].value;
+    ingData[i].un = ins[2].value;
+  });
+}
+
+function addIngRow() {
+  syncIng(); ingData.push({});
+  const list = document.getElementById('ingList');
+  const i = ingData.length - 1;
+  const div = document.createElement('div');
+  div.innerHTML = ingRowHTML(i, {});
+  list.appendChild(div.firstElementChild);
+}
+
+function removeIng(i) {
+  syncIng(); ingData.splice(i, 1);
+  document.getElementById('ingList').innerHTML = ingData.map((ig, idx) => ingRowHTML(idx, ig)).join('');
+}
+
+function cancelEdit() { editing = false; renderDishBody(); }
+
+// ══════════════════════════════════════════
+//  PHOTO CROP
+// ══════════════════════════════════════════
+let cropNaturalW=0,cropNaturalH=0,cropDispW=0,cropDispH=0;
+let cropOffX=0,cropOffY=0,cropDragging=false;
+let cropStartX=0,cropStartY=0,cropStartOffX=0,cropStartOffY=0;
+let cropOrigFile=null;
+
+function startCrop(e) {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  cropOrigFile = file;
+  const img = document.getElementById('cropImg');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    img.src = ev.target.result;
+    img.onload = () => {
+      cropNaturalW = img.naturalWidth; cropNaturalH = img.naturalHeight;
+      initCropTool();
+      document.getElementById('cropOverlay').classList.add('open');
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function initCropTool() {
+  const container = document.getElementById('cropContainer');
+  const img = document.getElementById('cropImg');
+  const cW = container.offsetWidth;
+  const cH = cW * 3 / 4;
+  container.style.height = cH + 'px';
+  const scale = Math.max(cW / cropNaturalW, cH / cropNaturalH);
+  cropDispW = cropNaturalW * scale; cropDispH = cropNaturalH * scale;
+  img.style.width = cropDispW + 'px'; img.style.height = cropDispH + 'px';
+  cropOffX = (cW - cropDispW) / 2; cropOffY = (cH - cropDispH) / 2;
+  applyCropPos();
+  container.onmousedown = e => { cropDragging=true; cropStartX=e.clientX; cropStartY=e.clientY; cropStartOffX=cropOffX; cropStartOffY=cropOffY; e.preventDefault(); };
+  window.onmousemove = e => { if(!cropDragging) return; cropOffX=cropStartOffX+(e.clientX-cropStartX); cropOffY=cropStartOffY+(e.clientY-cropStartY); clampCrop(); applyCropPos(); };
+  window.onmouseup = () => { cropDragging=false; };
+  container.ontouchstart = e => { const t=e.touches[0]; cropDragging=true; cropStartX=t.clientX; cropStartY=t.clientY; cropStartOffX=cropOffX; cropStartOffY=cropOffY; e.preventDefault(); };
+  container.ontouchmove = e => { if(!cropDragging) return; const t=e.touches[0]; cropOffX=cropStartOffX+(t.clientX-cropStartX); cropOffY=cropStartOffY+(t.clientY-cropStartY); clampCrop(); applyCropPos(); e.preventDefault(); };
+  container.ontouchend = () => { cropDragging=false; };
+}
+
+function clampCrop() {
+  const c = document.getElementById('cropContainer');
+  cropOffX = Math.min(0, Math.max(c.offsetWidth - cropDispW, cropOffX));
+  cropOffY = Math.min(0, Math.max(c.offsetHeight - cropDispH, cropOffY));
+}
+
+function applyCropPos() { document.getElementById('cropImg').style.transform = `translate(${cropOffX}px, ${cropOffY}px)`; }
+function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; }
+
+function confirmCrop() {
+  const container = document.getElementById('cropContainer');
+  const img = document.getElementById('cropImg');
+  const cW = container.offsetWidth, cH = container.offsetHeight;
+  const scaleX = cropNaturalW / cropDispW, scaleY = cropNaturalH / cropDispH;
+  const sx = -cropOffX * scaleX, sy = -cropOffY * scaleY;
+  const sw = cW * scaleX, sh = cH * scaleY;
+  const canvas = document.createElement('canvas');
+  const maxW = 1200;
+  canvas.width = Math.min(sw, maxW);
+  canvas.height = Math.round(canvas.width * 3 / 4);
+  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob(blob => {
+    pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+    const url = URL.createObjectURL(blob);
+    const preview = document.getElementById('photoPreview');
+    const noPreview = document.querySelector('.photo-no-preview');
+    if (preview) { preview.src = url; }
+    else if (noPreview) {
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-preview-wrap';
+      wrap.innerHTML = `<img id="photoPreview" src="${url}" alt="">`;
+      noPreview.replaceWith(wrap);
+    }
+    document.getElementById('cropOverlay').classList.remove('open');
+    toast('📷 Foto pronta — salve a receita para confirmar');
+  }, 'image/jpeg', 0.92);
+}
+
+async function removePhoto() {
+  if (!confirm('Remover a foto deste prato?')) return;
+  await api('DELETE', `/dishes/${currentDish.id}/photo`);
+  currentDish.photo_url = null;
+  const d = dishes.find(x => x.id === currentDish.id);
+  if (d) d.photo_url = null;
+  renderGrid(); renderEditForm();
+  toast('🗑 Foto removida');
+}
+
+// ══════════════════════════════════════════
+//  SAVE RECIPE
+// ══════════════════════════════════════════
+async function saveRecipe() {
+  // Força leitura dos valores atuais do DOM antes de qualquer coisa
+  document.querySelectorAll('.ing-row').forEach((row, i) => {
+    if (!ingData[i]) ingData[i] = {};
+    const ins = row.querySelectorAll('input');
+    ingData[i].nome = ins[0]?.value || '';
+    ingData[i].qtd  = ins[1]?.value || '';
+    ingData[i].un   = ins[2]?.value || '';
+  });
+
+  const modo = (document.getElementById('fM').value || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const ingredientesFiltrados = ingData.filter(ig => ig.nome?.trim());
+
+  const body = {
+    rendimento:    document.getElementById('fR').value.trim(),
+    tempo_preparo: document.getElementById('fTP').value.trim(),
+    tempo_forno:   document.getElementById('fTF').value.trim(),
+    custo:         document.getElementById('fC').value.trim(),
+    ingredientes:  ingredientesFiltrados,
+    modo,
+    observacoes: document.getElementById('fO').value.trim(),
+  };
+
+  if (pendingPhoto) {
+    const r = await apiUpload(`/dishes/${currentDish.id}/photo`, pendingPhoto);
+    if (r.photo_url) {
+      currentDish.photo_url = r.photo_url;
+      const d = dishes.find(x => x.id === currentDish.id);
+      if (d) d.photo_url = r.photo_url;
+    }
+    pendingPhoto = null;
+  }
+
+  const hasContent = ingredientesFiltrados.length > 0 || body.modo.length > 0 ||
+    body.rendimento || body.tempo_preparo || body.tempo_forno || body.custo || body.observacoes;
+
+  if (hasContent) {
+    const res = await api('POST', `/dishes/${currentDish.id}/recipe`, body);
+    if (res?.error) { toast('❌ ' + res.error); return; }
+    const idx = dishes.findIndex(x => x.id === currentDish.id);
+    if (idx >= 0) dishes[idx].has_recipe = 1;
+  }
+
+  const updated = await api('GET', `/dishes/${currentDish.id}`);
+  currentDish = updated;
+  const idx = dishes.findIndex(x => x.id === currentDish.id);
+  if (idx >= 0) dishes[idx] = { ...dishes[idx], ...updated };
+
+  editing = false;
+  renderDishBody(); renderGrid(); renderStats();
+  toast(hasContent ? '✅ Receita salva!' : '📷 Foto atualizada!');
+}
+
+async function deleteRecipe() {
+  if (!confirm(`Apagar a receita de "${currentDish.name}"?`)) return;
+  await api('DELETE', `/dishes/${currentDish.id}/recipe`);
+  currentDish.recipe = null;
+  const idx = dishes.findIndex(x => x.id === currentDish.id);
+  if (idx >= 0) dishes[idx].has_recipe = 0;
+  editing = false; renderDishBody(); renderGrid(); renderStats();
+  toast('🗑 Receita apagada');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN PANEL
+// ══════════════════════════════════════════
+let adminAllDishes = [];
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
+  const btnMap = { users:'tabBtnUsers', dishes:'tabBtnDishes', stats:'tabBtnStats', activity:'tabBtnActivity', backup:'tabBtnBackup' };
+  const contentMap = { users:'tabUsers', dishes:'tabDishes', stats:'tabStats', activity:'tabActivity', backup:'tabBackup' };
+  document.getElementById(btnMap[tab])?.classList.add('active');
+  document.getElementById(contentMap[tab])?.classList.add('active');
+  loadCurrentAdminTab();
+}
+
+function loadCurrentAdminTab() {
+  if (currentAdminTab === 'users' && isAdmin()) loadUsers();
+  if (currentAdminTab === 'dishes') loadAdminDishes();
+  if (currentAdminTab === 'stats') renderAdminStats();
+  if (currentAdminTab === 'activity') loadActivity();
+  if (currentAdminTab === 'backup') loadBackup();
+}
+
+// ── USERS ──────────────────────────────────────────
+async function loadUsers() {
+  const users = await api('GET', '/users');
+  const list = document.getElementById('userList');
+  if (!users?.length) { list.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum usuário.</p>'; return; }
+  list.innerHTML = users.map(u => `
+    <div class="user-item">
+      <div>
+        <div class="user-item-name">${esc(u.name)}</div>
+        <div class="user-item-info">
+          @${esc(u.username)}
+          <span class="badge-${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
+        </div>
+      </div>
+      <div class="user-actions">
+        <button class="btn-sm btn-sm-edit" onclick="openEditUser(${u.id},'${esc(u.name)}','${u.role}')">Editar</button>
+        ${u.id !== currentUser.id ? `<button class="btn-sm btn-sm-del" onclick="deleteUser(${u.id},'${esc(u.name)}')">Excluir</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function createUser() {
+  const name = document.getElementById('nuName').value.trim();
+  const username = document.getElementById('nuUser').value.trim();
+  const password = document.getElementById('nuPass').value;
+  const role = document.getElementById('nuRole').value;
+  if (!name || !username || !password) { toast('⚠️ Preencha todos os campos'); return; }
+  const r = await api('POST', '/users', { name, username, password, role });
+  if (r.error) { toast('❌ ' + r.error); return; }
+  document.getElementById('nuName').value = '';
+  document.getElementById('nuUser').value = '';
+  document.getElementById('nuPass').value = '';
+  loadUsers();
+  toast('✅ Usuário criado!');
+}
+
+function openEditUser(id, name, role) {
+  document.getElementById('euId').value = id;
+  document.getElementById('euName').value = name;
+  document.getElementById('euRole').value = role;
+  document.getElementById('euPass').value = '';
+  document.getElementById('editUserOverlay').classList.add('open');
+}
+
+async function saveUser() {
+  const id = document.getElementById('euId').value;
+  const name = document.getElementById('euName').value.trim();
+  const password = document.getElementById('euPass').value;
+  const role = document.getElementById('euRole').value;
+  const body = { name, role };
+  if (password) body.password = password;
+  const r = await api('PUT', `/users/${id}`, body);
+  if (r?.error) { toast('❌ ' + r.error); return; }
+  closeModal('editUserOverlay');
+  loadUsers();
+  toast('✅ Usuário atualizado!');
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Excluir o usuário "${name}"?`)) return;
+  await api('DELETE', `/users/${id}`);
+  loadUsers();
+  toast('🗑 Usuário excluído');
+}
+
+// ── DISHES ADMIN ────────────────────────────────────
+async function loadAdminDishes() {
+  const data = await api('GET', '/dishes');
+  adminAllDishes = data || [];
+  renderAdminDishes();
+}
+
+function renderAdminDishes() {
+  const q = (document.getElementById('dishSearch')?.value || '').toLowerCase();
+  const list = q ? adminAllDishes.filter(d => d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q)) : adminAllDishes;
+  const el = document.getElementById('adminDishList');
+  if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:10px 0">Nenhum prato encontrado.</p>'; return; }
+  el.innerHTML = list.map(d => {
+    const authorInfo = d.recipe_author_name ? `Receita: ${esc(d.recipe_author_name)} · ${fmtDate(d.recipe_created_at)}` : '';
+    return `
+    <div class="dish-item">
+      <div>
+        <div class="dish-item-name">${d.emoji || '🍽️'} ${esc(d.name)}</div>
+        <div class="dish-item-info">${esc(d.category)} · ${d.has_recipe ? '<span style="color:#3a6645">✓ com receita</span>' : '<span style="color:var(--accent2)">sem receita</span>'}</div>
+        ${authorInfo ? `<div class="dish-item-info" style="margin-top:1px">${authorInfo}</div>` : ''}
+      </div>
+      <div class="user-actions">
+        <button class="btn-sm btn-sm-edit" onclick="openEditDish(${d.id},\`${esc(d.name)}\`,\`${esc(d.category)}\`,\`${esc(d.emoji||'')}\`)">Editar</button>
+        ${isAdmin() ? `<button class="btn-sm btn-sm-del" onclick="adminDeleteDish(${d.id},\`${esc(d.name)}\`)">Excluir</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function adminAddDish() {
+  const name = document.getElementById('ndName').value.trim();
+  if (!name) { toast('⚠️ Digite o nome do prato'); return; }
+  const data = await api('POST', '/dishes', {
+    name,
+    category: document.getElementById('ndCat').value,
+    emoji: document.getElementById('ndEmoji').value.trim() || '🍽️',
+  });
+  if (data.error) { toast('❌ ' + data.error); return; }
+  dishes.push({ ...data, has_recipe: 0 });
+  renderChips(); renderGrid(); renderStats();
+  document.getElementById('ndName').value = '';
+  document.getElementById('ndEmoji').value = '';
+  await loadAdminDishes();
+  toast('✅ Prato criado!');
+}
+
+function openEditDish(id, name, category, emoji) {
+  document.getElementById('edId').value = id;
+  document.getElementById('edName').value = name;
+  document.getElementById('edCat').value = category;
+  document.getElementById('edEmoji').value = emoji;
+  document.getElementById('editDishOverlay').classList.add('open');
+}
+
+async function saveAdminDish() {
+  const id = document.getElementById('edId').value;
+  const name = document.getElementById('edName').value.trim();
+  const category = document.getElementById('edCat').value;
+  const emoji = document.getElementById('edEmoji').value.trim() || '🍽️';
+  if (!name) { toast('⚠️ Digite o nome'); return; }
+  await api('PUT', `/dishes/${id}`, { name, category, emoji });
+  const d = dishes.find(x => x.id == id);
+  if (d) { d.name = name; d.category = category; d.emoji = emoji; }
+  const da = adminAllDishes.find(x => x.id == id);
+  if (da) { da.name = name; da.category = category; da.emoji = emoji; }
+  renderAdminDishes(); renderGrid(); renderChips();
+  closeModal('editDishOverlay');
+  toast('✅ Prato atualizado!');
+}
+
+async function adminDeleteDish(id, name) {
+  if (!confirm(`Excluir o prato "${name}" e toda sua receita?\n\nEssa ação não pode ser desfeita.`)) return;
+  await api('DELETE', `/dishes/${id}`);
+  dishes = dishes.filter(x => x.id != id);
+  adminAllDishes = adminAllDishes.filter(x => x.id != id);
+  renderAdminDishes(); renderGrid(); renderChips(); renderStats();
+  toast('🗑 Prato excluído');
+}
+
+// ── STATS ──────────────────────────────────────────
+function renderAdminStats() {
+  const total = dishes.length;
+  const comReceita = dishes.filter(d => d.has_recipe).length;
+  const semReceita = total - comReceita;
+  const pct = total ? Math.round(comReceita / total * 100) : 0;
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">Total de Pratos</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${comReceita}</div><div class="stat-lbl">Com Receita</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent2)">${semReceita}</div><div class="stat-lbl">Sem Receita</div></div>
+    <div class="stat-card"><div class="stat-num">${pct}%</div><div class="stat-lbl">Completo</div></div>`;
+
+  const byCategory = {};
+  dishes.forEach(d => {
+    if (!byCategory[d.category]) byCategory[d.category] = { total: 0, com: 0 };
+    byCategory[d.category].total++;
+    if (d.has_recipe) byCategory[d.category].com++;
+  });
+
+  const sorted = Object.entries(byCategory).sort((a, b) => b[1].total - a[1].total);
+  document.getElementById('statCats').innerHTML = sorted.map(([cat, v]) => {
+    const p = Math.round(v.com / v.total * 100);
+    return `<div class="cat-bar-wrap">
+      <div class="cat-bar-label"><span>${esc(cat)}</span><span>${v.com}/${v.total}</span></div>
+      <div class="cat-bar"><div class="cat-bar-fill" style="width:${p}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIVITY ──────────────────────────────────────
+const actionIcons = {
+  login:'🔑', criar_receita:'📝', editar_receita:'✏️', excluir_receita:'🗑',
+  criar_prato:'➕', editar_prato:'✏️', excluir_prato:'🗑',
+  foto_prato:'📷', remover_foto:'🗑',
+  criar_usuario:'👤', editar_usuario:'👤', excluir_usuario:'🚫',
+};
+const actionLabels = {
+  login:'fez login', criar_receita:'criou receita para', editar_receita:'editou receita de',
+  excluir_receita:'apagou receita de', criar_prato:'criou o prato',
+  editar_prato:'editou o prato', excluir_prato:'excluiu o prato',
+  foto_prato:'enviou foto de', remover_foto:'removeu foto de',
+  criar_usuario:'criou o usuário', editar_usuario:'editou o usuário', excluir_usuario:'excluiu o usuário',
+};
+
+async function loadActivity() {
+  const el = document.getElementById('activityLog');
+  el.innerHTML = '<div class="loader"><div class="spinner"></div>Carregando…</div>';
+  const logs = await api('GET', '/activity?limit=80');
+  if (!logs || logs.error) { el.innerHTML = '<div class="log-empty">Sem acesso ao log.</div>'; return; }
+  if (!logs.length) { el.innerHTML = '<div class="log-empty">📋 Nenhuma atividade ainda.</div>'; return; }
+
+  el.innerHTML = logs.map(l => `
+    <div class="log-item">
+      <div class="log-icon">${actionIcons[l.action] || '📌'}</div>
+      <div class="log-content">
+        <div class="log-action">
+          <strong>${esc(l.user_name)}</strong>
+          ${actionLabels[l.action] || l.action}
+          ${l.target ? `<span class="log-target">${esc(l.target)}</span>` : ''}
+          ${l.details ? `<span style="color:var(--muted);font-size:.78rem"> · ${esc(l.details)}</span>` : ''}
+        </div>
+        <div class="log-time">${fmtDate(l.created_at)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  BACKUP
+// ══════════════════════════════════════════
+async function loadBackup() {
+  // Status
+  const statusEl = document.getElementById('backupStatus');
+  const listEl = document.getElementById('backupList');
+
+  const status = await api('GET', '/admin/backup/status');
+  if (status?.error) {
+    statusEl.innerHTML = '<p style="color:var(--red)">Erro ao carregar status.</p>';
+  } else {
+    const intOk = status.integrity === 'ok';
+    statusEl.innerHTML = `
+      <div class="backup-status-grid">
+        <div class="bstat-card">
+          <div class="bstat-icon">${intOk ? '✅' : '❌'}</div>
+          <div class="bstat-label">Integridade</div>
+          <div class="bstat-val" style="color:${intOk ? 'var(--green)' : 'var(--red)'}">${intOk ? 'OK' : 'ERRO'}</div>
+        </div>
+        <div class="bstat-card">
+          <div class="bstat-icon">💽</div>
+          <div class="bstat-label">Tamanho</div>
+          <div class="bstat-val">${status.db_size_kb} KB</div>
+        </div>
+        <div class="bstat-card">
+          <div class="bstat-icon">🍽️</div>
+          <div class="bstat-label">Pratos</div>
+          <div class="bstat-val">${status.counts.pratos}</div>
+        </div>
+        <div class="bstat-card">
+          <div class="bstat-icon">📝</div>
+          <div class="bstat-label">Receitas</div>
+          <div class="bstat-val">${status.counts.receitas}</div>
+        </div>
+        <div class="bstat-card">
+          <div class="bstat-icon">👥</div>
+          <div class="bstat-label">Usuários</div>
+          <div class="bstat-val">${status.counts.usuarios}</div>
+        </div>
+        <div class="bstat-card">
+          <div class="bstat-icon">💾</div>
+          <div class="bstat-label">Backups</div>
+          <div class="bstat-val">${status.total_backups}</div>
+        </div>
+      </div>
+      ${status.ultimo_backup ? `<p style="font-size:.76rem;color:var(--muted);margin-top:10px">Último backup automático: <strong>${status.ultimo_backup.replace('backup-','').replace('.db','')}</strong></p>` : ''}
+    `;
+  }
+
+  // Lista de backups
+  const files = await api('GET', '/admin/backup/list');
+  if (!files?.length) {
+    listEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum backup automático ainda. O primeiro será criado em até 6 horas.</p>';
+    return;
+  }
+  listEl.innerHTML = files.map(f => {
+    const sizeKb = Math.round(f.size / 1024);
+    const date = new Date(f.date).toLocaleString('pt-BR');
+    return `
+      <div class="backup-item">
+        <div>
+          <div class="backup-name">${f.name.replace('backup-','').replace('.db','')}</div>
+          <div class="backup-meta">${sizeKb} KB · ${date}</div>
+        </div>
+        <a class="btn-sm btn-sm-edit" href="/api/admin/backup/download/${f.name}" download="${f.name}">⬇️ Baixar</a>
+      </div>
+    `;
+  }).join('');
+}
+
+async function downloadBackup() {
+  toast('⏳ Gerando backup…');
+  // Abre direto como download via link com token
+  const a = document.createElement('a');
+  a.href = '/api/admin/backup/download';
+  // Passa token via query não é ideal mas para download direto é necessário
+  // Melhor abrir numa nova aba autenticada
+  const res = await fetch('/api/admin/backup/download', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) { toast('❌ Erro ao gerar backup'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+  a.href = url;
+  a.download = `receituario-backup-${stamp}.db`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Backup baixado!');
+}
+
+// ═══ KEYBOARD ═══
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['recipeOverlay','editDishOverlay','editUserOverlay','cropOverlay'].forEach(closeModal);
+  }
+});
+</script>
+</body>
+</html>
