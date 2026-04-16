@@ -13,11 +13,72 @@ const APP_URL = process.env.RAILWAY_PUBLIC_DOMAIN
   ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
   : `http://localhost:${PORT}`;
 
-// ── UPLOADS DIR ─────────────────────────────────────
+// ── DIRS ─────────────────────────────────────────────
 const DATA_DIR = '/app/data';
-if (!fs.existsSync(DATA_DIR)) { const fs2 = require('fs'); fs2.mkdirSync(DATA_DIR, { recursive: true }); }
-const UPLOADS_DIR = require('path').join(DATA_DIR, 'uploads');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'data.db');
+
+// ══════════════════════════════════════════════════════
+//  1. VERIFICAÇÃO DE INTEGRIDADE NO BOOT
+// ══════════════════════════════════════════════════════
+function checkIntegrity() {
+  try {
+    const result = db.prepare('PRAGMA integrity_check').get();
+    if (result?.integrity_check === 'ok') {
+      console.log('✅ Banco de dados íntegro.');
+    } else {
+      console.error('❌ ATENÇÃO: Banco de dados com problema!', result);
+    }
+    const counts = {
+      usuarios:    db.prepare('SELECT COUNT(*) as c FROM users').get().c,
+      pratos:      db.prepare('SELECT COUNT(*) as c FROM dishes').get().c,
+      receitas:    db.prepare('SELECT COUNT(*) as c FROM recipes').get().c,
+      ingredientes:db.prepare('SELECT COUNT(*) as c FROM ingredients').get().c,
+      atividades:  db.prepare('SELECT COUNT(*) as c FROM activity_log').get().c,
+    };
+    console.log('📊 Estado do banco:', counts);
+  } catch(e) {
+    console.error('❌ Erro ao verificar integridade:', e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  2. BACKUP AUTOMÁTICO A CADA 6 HORAS
+// ══════════════════════════════════════════════════════
+function runBackup() {
+  try {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}h`;
+    const dest = path.join(BACKUP_DIR, `backup-${stamp}.db`);
+
+    // Usa o backup online do SQLite (não bloqueia o banco)
+    db.prepare('VACUUM INTO ?').run(dest);
+    console.log(`💾 Backup criado: ${dest}`);
+
+    // Mantém apenas os 20 backups mais recentes
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('backup-') && f.endsWith('.db'))
+      .sort();
+    if (files.length > 20) {
+      files.slice(0, files.length - 20).forEach(f => {
+        fs.unlinkSync(path.join(BACKUP_DIR, f));
+        console.log(`🗑 Backup antigo removido: ${f}`);
+      });
+    }
+  } catch(e) {
+    console.error('❌ Erro no backup:', e.message);
+  }
+}
+
+// Roda imediatamente no boot e depois a cada 6 horas
+checkIntegrity();
+runBackup();
+setInterval(runBackup, 6 * 60 * 60 * 1000);
 
 // ── MULTER ──────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -85,6 +146,79 @@ setInterval(() => {
 }, 14 * 60 * 1000);
 
 app.get('/api/ping', (_, res) => res.json({ ok: true, ts: Date.now() }));
+
+// ══════════════════════════════════════════════════════
+//  3. ENDPOINTS DE BACKUP (só admin)
+// ══════════════════════════════════════════════════════
+
+// Baixar o banco atual
+app.get('/api/admin/backup/download', auth, adminOnly, (req, res) => {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,16);
+    const tmpFile = path.join(BACKUP_DIR, `download-${stamp}.db`);
+    db.prepare('VACUUM INTO ?').run(tmpFile);
+    res.download(tmpFile, `receituario-backup-${stamp}.db`, err => {
+      if (!err) fs.unlink(tmpFile, () => {});
+    });
+    logActivity(req.user.id, req.user.name, 'backup_download', null, 'Download manual do banco');
+  } catch(e) {
+    res.status(500).json({ error: 'Erro ao gerar backup: ' + e.message });
+  }
+});
+
+// Listar backups automáticos disponíveis
+app.get('/api/admin/backup/list', auth, adminOnly, (req, res) => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('backup-') && f.endsWith('.db'))
+      .sort().reverse()
+      .map(f => {
+        const stat = fs.statSync(path.join(BACKUP_DIR, f));
+        return { name: f, size: stat.size, date: stat.mtime };
+      });
+    res.json(files);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Baixar um backup específico
+app.get('/api/admin/backup/download/:filename', auth, adminOnly, (req, res) => {
+  const filename = path.basename(req.params.filename);
+  if (!filename.startsWith('backup-') || !filename.endsWith('.db')) {
+    return res.status(400).json({ error: 'Arquivo inválido' });
+  }
+  const filepath = path.join(BACKUP_DIR, filename);
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Backup não encontrado' });
+  res.download(filepath, filename);
+});
+
+// Status geral do banco (para diagnóstico)
+app.get('/api/admin/backup/status', auth, adminOnly, (req, res) => {
+  try {
+    const integrity = db.prepare('PRAGMA integrity_check').get();
+    const counts = {
+      usuarios:     db.prepare('SELECT COUNT(*) as c FROM users').get().c,
+      pratos:       db.prepare('SELECT COUNT(*) as c FROM dishes').get().c,
+      receitas:     db.prepare('SELECT COUNT(*) as c FROM recipes').get().c,
+      ingredientes: db.prepare('SELECT COUNT(*) as c FROM ingredients').get().c,
+      atividades:   db.prepare('SELECT COUNT(*) as c FROM activity_log').get().c,
+    };
+    const backups = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('backup-') && f.endsWith('.db'))
+      .sort().reverse();
+    const dbStat = fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH) : null;
+    res.json({
+      integrity: integrity?.integrity_check,
+      db_size_kb: dbStat ? Math.round(dbStat.size / 1024) : 0,
+      counts,
+      total_backups: backups.length,
+      ultimo_backup: backups[0] || null,
+    });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // ══════════════════════════════════════════════════════
 //  SYNC — endpoint para clientes verificarem atualizações
