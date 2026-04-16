@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#6b3d1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,13 +14,27 @@
 <style>
 /* ═══ RESET & VARS ═══════════════════════════════ */
 :root{
-  --bg:#f4efe6;--surface:#fdfaf3;--border:#ddd0b8;
-  --accent:#6b3d1e;--accent2:#c07c30;--accent3:#e8d5b0;
-  --text:#231809;--muted:#8a7560;--green:#3a6645;--red:#8b2e2e;
-  --radius:14px;--shadow:0 4px 24px rgba(35,24,9,.12);
+  --bg:#f2ece0;--surface:#fdfaf4;--border:#e0cfb0;
+  --accent:#5c3214;--accent2:#b8711e;--accent3:#e8d5a8;
+  --text:#1e1208;--muted:#7a6650;--green:#2e5c38;--red:#7a2020;
+  --radius:16px;--shadow:0 6px 32px rgba(30,18,8,.14);
+  --nav-h:68px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+html{height:100%;height:-webkit-fill-available}
+body{
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overscroll-behavior:none;
+  -webkit-text-size-adjust:100%;
+}
 
 /* ═══ SPLASH ═════════════════════════════════════ */
 #splash{
@@ -29,254 +43,440 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   transition:opacity .6s ease;overflow:hidden;
 }
-#splash::before{
-  content:'';position:absolute;width:500px;height:500px;border-radius:50%;
-  border:1px solid rgba(255,248,238,.08);
-  top:50%;left:50%;transform:translate(-50%,-50%);
-  animation:pulseRing 3s ease-in-out infinite;
-}
-#splash::after{
-  content:'';position:absolute;width:360px;height:360px;border-radius:50%;
-  border:1px solid rgba(255,248,238,.12);
-  top:50%;left:50%;transform:translate(-50%,-50%);
-  animation:pulseRing 3s .5s ease-in-out infinite;
-}
-@keyframes pulseRing{
-  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}
-  50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}
-}
+#splash::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;border:1px solid rgba(255,248,238,.07);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseRing 3s ease-in-out infinite}
+#splash::after{content:'';position:absolute;width:340px;height:340px;border-radius:50%;border:1px solid rgba(255,248,238,.11);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseRing 3s .5s ease-in-out infinite}
+@keyframes pulseRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
 #splash.hide{opacity:0;pointer-events:none}
 .splash-logo-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;animation:splashIn .8s cubic-bezier(.22,1,.36,1) both}
-.splash-img{width:min(220px,50vw);height:min(220px,50vw);border-radius:28px;box-shadow:0 12px 60px rgba(0,0,0,.35),0 0 0 1px rgba(255,248,238,.1);object-fit:cover;display:block}
-.splash-img-fallback{width:min(220px,50vw);height:min(220px,50vw);border-radius:28px;background:rgba(255,248,238,.08);display:flex;align-items:center;justify-content:center;font-size:5rem}
+.splash-img{width:min(200px,48vw);height:min(200px,48vw);border-radius:30px;box-shadow:0 16px 64px rgba(0,0,0,.4),0 0 0 1px rgba(255,248,238,.08);object-fit:cover;display:block}
+.splash-img-fallback{width:min(200px,48vw);height:min(200px,48vw);border-radius:30px;background:rgba(255,248,238,.08);display:flex;align-items:center;justify-content:center;font-size:5rem}
 .splash-brand{margin-top:28px;text-align:center}
 .splash-name{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,5vw,2.2rem);color:#fff8ee;font-weight:500;letter-spacing:.01em;line-height:1.1}
 .splash-name em{color:var(--accent2);font-style:italic}
-.splash-sub{color:rgba(255,248,238,.55);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;margin-top:8px}
-.splash-dots{display:flex;gap:7px;margin-top:36px}
-.splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,248,238,.3);animation:dotPulse 1.4s ease-in-out infinite}
-.splash-dot:nth-child(2){animation-delay:.2s}
-.splash-dot:nth-child(3){animation-delay:.4s}
-@keyframes dotPulse{0%,100%{background:rgba(255,248,238,.25);transform:scale(1)}50%{background:rgba(255,248,238,.8);transform:scale(1.3)}}
-@keyframes splashIn{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.splash-sub{color:rgba(255,248,238,.45);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;margin-top:10px}
+.splash-dots{display:flex;gap:8px;margin-top:40px}
+.splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,248,238,.25);animation:dotPulse 1.4s ease-in-out infinite}
+.splash-dot:nth-child(2){animation-delay:.2s}.splash-dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,100%{background:rgba(255,248,238,.2);transform:scale(1)}50%{background:rgba(255,248,238,.75);transform:scale(1.35)}}
+@keyframes splashIn{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
 
 /* ═══ LOGIN ══════════════════════════════════════ */
-#loginScreen{display:none;position:fixed;inset:0;z-index:900;background:var(--bg);align-items:center;justify-content:center;flex-direction:column}
+#loginScreen{display:none;position:fixed;inset:0;z-index:900;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;padding:20px}
 #loginScreen.active{display:flex}
-.login-box{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:36px 32px;width:min(420px,92vw);box-shadow:var(--shadow)}
-.login-logo{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);text-align:center;margin-bottom:4px}
+.login-box{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:24px;
+  padding:40px 32px;
+  width:min(420px,100%);
+  box-shadow:var(--shadow);
+}
+.login-logo{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--accent);text-align:center;margin-bottom:4px}
 .login-logo em{color:var(--accent2);font-style:italic}
-.login-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:28px;letter-spacing:.06em;text-transform:uppercase}
-.login-err{background:#fff0f0;border:1px solid #f0c0c0;color:var(--red);border-radius:8px;padding:9px 14px;font-size:.84rem;margin-bottom:14px;display:none}
+.login-sub{text-align:center;color:var(--muted);font-size:.78rem;margin-bottom:32px;letter-spacing:.08em;text-transform:uppercase}
+.login-err{background:#fff0f0;border:1px solid #f0c0c0;color:var(--red);border-radius:10px;padding:10px 14px;font-size:.84rem;margin-bottom:16px;display:none}
 .login-err.show{display:block}
-.fg{margin-bottom:14px}
-.fg label{display:block;font-size:.76rem;font-weight:500;margin-bottom:5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
-.fg input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.95rem;color:var(--text);background:#f8f3e8;outline:none;transition:border-color .2s}
-.fg input:focus{border-color:var(--accent2)}
-.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:13px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:500;cursor:pointer;margin-top:4px;transition:background .18s}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:.72rem;font-weight:600;margin-bottom:6px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.fg input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--text);background:#f9f4ea;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+.fg input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(184,113,30,.15)}
+.btn-login{width:100%;background:var(--accent);color:#fff8ee;border:none;border-radius:12px;padding:15px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;margin-top:6px;transition:background .18s,transform .1s;letter-spacing:.02em}
+.btn-login:active{transform:scale(.98)}
 .btn-login:hover{background:var(--accent2)}
 
 /* ═══ APP SHELL ══════════════════════════════════ */
-#app{display:none;flex-direction:column;height:100vh}
+#app{display:none;flex-direction:column;height:100vh;height:100dvh}
 #app.active{display:flex}
-.topbar{background:var(--accent);padding:12px 20px;padding-top:calc(env(safe-area-inset-top, 0px) + 12px);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 14px rgba(0,0,0,.25);flex-shrink:0;position:sticky;top:0;z-index:100}
-.topbar-logo{font-family:'Playfair Display',serif;font-size:1.15rem;color:#fff8ee}
-.topbar-logo em{color:var(--accent2);font-style:italic}
-.topbar-sub{font-size:.65rem;color:rgba(255,248,238,.6);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.user-pill{background:rgba(255,255,255,.15);border-radius:50px;padding:5px 12px;font-size:.78rem;color:#fff8ee;display:flex;align-items:center;gap:6px}
-.role-badge{background:var(--accent2);border-radius:50px;padding:2px 7px;font-size:.65rem;font-weight:600;letter-spacing:.04em}
-.btn-icon{background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;min-width:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:background .15s;-webkit-tap-highlight-color:transparent}
-.btn-icon:hover,.btn-icon:active{background:rgba(255,255,255,.3)}
 
-/* SYNC INDICATOR */
-.sync-dot{width:8px;height:8px;border-radius:50%;background:#5aaa70;flex-shrink:0;transition:background .3s}
+/* TOPBAR — fixed safe-area for iPhone notch */
+.topbar{
+  background:var(--accent);
+  /* Top padding: safe-area + 14px; sides: safe-area + 18px */
+  padding:calc(var(--safe-top) + 14px) calc(var(--safe-right) + 18px) 14px calc(var(--safe-left) + 18px);
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 20px rgba(0,0,0,.28);
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+  /* Ensure we extend behind the status bar */
+  margin-top:0;
+}
+.topbar-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:#fff8ee;line-height:1}
+.topbar-logo em{color:var(--accent2);font-style:italic}
+.topbar-sub{font-size:.62rem;color:rgba(255,248,238,.55);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:0}
+.user-pill{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,248,238,.15);
+  border-radius:50px;
+  padding:5px 11px 5px 10px;
+  font-size:.76rem;color:#fff8ee;
+  display:flex;align-items:center;gap:6px;
+  max-width:140px;overflow:hidden;
+}
+.user-pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role-badge{border-radius:50px;padding:2px 8px;font-size:.62rem;font-weight:700;letter-spacing:.04em;flex-shrink:0;white-space:nowrap}
+.rb-admin{background:var(--accent2);color:#fff}
+.rb-gerente{background:var(--green);color:#fff}
+.rb-operador{background:rgba(255,255,255,.22);color:#fff8ee}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4daa65;flex-shrink:0;transition:background .3s}
 .sync-dot.stale{background:var(--accent2);animation:syncPulse 1s ease infinite}
-@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ═══ CONTENT AREA ═══════════════════════════════ */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+.page.active{display:flex}
 
 /* CONTROLS */
-.controls{padding:14px 20px 0;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.controls{
+  padding:14px calc(var(--safe-left) + 16px) 0 calc(var(--safe-left) + 16px);
+  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
+}
 .search-wrap{position:relative}
-.search-wrap input{width:100%;padding:10px 14px 10px 40px;border:1.5px solid var(--border);border-radius:50px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s}
-.search-wrap input:focus{border-color:var(--accent2)}
-.si{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.search-wrap input{
+  width:100%;
+  padding:11px 16px 11px 42px;
+  border:1.5px solid var(--border);
+  border-radius:50px;
+  background:var(--surface);
+  font-family:'DM Sans',sans-serif;
+  font-size:.92rem;color:var(--text);
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;
+  box-shadow:0 2px 8px rgba(30,18,8,.06);
+}
+.search-wrap input:focus{border-color:var(--accent2);box-shadow:0 2px 12px rgba(184,113,30,.18)}
+.si{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .chips::-webkit-scrollbar{display:none}
-.chip{padding:6px 14px;border:1.5px solid var(--border);border-radius:50px;font-size:.78rem;cursor:pointer;background:var(--surface);color:var(--muted);transition:all .18s;white-space:nowrap;flex-shrink:0}
-.chip.active,.chip:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip{
+  padding:7px 16px;
+  border:1.5px solid var(--border);
+  border-radius:50px;
+  font-size:.78rem;
+  cursor:pointer;
+  background:var(--surface);
+  color:var(--muted);
+  transition:all .18s;
+  white-space:nowrap;
+  flex-shrink:0;
+  font-weight:500;
+  box-shadow:0 1px 4px rgba(30,18,8,.06);
+}
+.chip.active,.chip:active{background:var(--accent);border-color:var(--accent);color:#fff8ee;box-shadow:0 3px 10px rgba(92,50,20,.35)}
 
 /* STATS BAR */
-.stats{padding:8px 20px 10px;font-size:.74rem;color:var(--muted);display:flex;gap:14px;align-items:center;flex-shrink:0}
-.stats span{display:flex;align-items:center;gap:4px}
+.stats{
+  padding:8px calc(var(--safe-left) + 16px) 10px;
+  font-size:.74rem;color:var(--muted);
+  display:flex;gap:14px;align-items:center;flex-shrink:0;
+}
+.stats span{display:flex;align-items:center;gap:5px}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dot-ok{background:#5aaa70}.dot-no{background:var(--accent2)}
+.dot-ok{background:#4daa65}.dot-no{background:var(--accent2)}
 
-/* GRID */
-.grid-wrap{flex:1;overflow-y:auto;padding:0 20px 100px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;padding-top:4px}
+/* GRID — force 2 columns on mobile */
+.grid-wrap{
+  flex:1;overflow-y:auto;
+  padding:0 calc(var(--safe-left) + 14px) calc(var(--safe-bottom) + 20px);
+  -webkit-overflow-scrolling:touch;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  padding-top:6px;
+}
+@media(min-width:480px){
+  .grid{grid-template-columns:repeat(2,1fr);gap:14px}
+}
+@media(min-width:700px){
+  .grid{grid-template-columns:repeat(3,1fr);gap:14px}
+}
 @media(min-width:1024px){
   .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
   .controls{flex-direction:row;align-items:center}
-  .search-wrap{flex:1;max-width:380px}
+  .search-wrap{flex:1;max-width:400px}
   .chips{flex-wrap:wrap}
 }
+.card{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:transform .18s,box-shadow .18s,border-color .18s;
+  position:relative;overflow:hidden;
+  box-shadow:0 2px 10px rgba(30,18,8,.07);
+}
+.card:active{transform:scale(.96);box-shadow:var(--shadow)}
+.card-photo{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#e8dcc8}
+.card-no-photo{
+  width:100%;aspect-ratio:4/3;
+  background:linear-gradient(145deg,#ede4d0 0%,#f6edd8 50%,#e8dcc8 100%);
+  display:flex;align-items:center;justify-content:center;font-size:2.6rem;
+}
+.card-body{padding:10px 12px 12px}
+.card-badge{position:absolute;top:9px;right:9px;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2.5px rgba(255,255,255,.85)}
+.cb-ok{background:#4daa65}.cb-no{background:var(--accent2)}
+.card-name{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:500;line-height:1.3;color:var(--text)}
+.card-cat{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:4px;font-weight:500}
+.no-results{grid-column:1/-1;text-align:center;padding:52px 20px;color:var(--muted)}
+.no-results .big{font-size:2.8rem;margin-bottom:12px}
 
-/* CARD */
-.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;position:relative;overflow:hidden}
-.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--accent2)}
-.card-photo{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#ede4d0}
-.card-no-photo{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#ede4d0,#f5edd8);display:flex;align-items:center;justify-content:center;font-size:2.5rem}
-.card-body{padding:12px}
-.card-badge{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
-.cb-ok{background:#5aaa70}.cb-no{background:var(--accent2)}
-.card-name{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:500;line-height:1.25;color:var(--text)}
-.card-cat{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
-.no-results{grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--muted)}
-.no-results .big{font-size:2.5rem;margin-bottom:10px}
-
-/* FAB */
-.fab{position:fixed;bottom:24px;right:20px;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:13px 22px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;box-shadow:0 4px 20px rgba(107,61,30,.4);display:flex;align-items:center;gap:7px;transition:all .18s;z-index:90}
-.fab:hover{background:var(--accent2);transform:scale(1.04)}
-.fab.hidden{display:none}
+/* ═══ BOTTOM NAV ═════════════════════════════════ */
+.bottom-nav{
+  display:flex;align-items:stretch;
+  background:var(--accent);
+  border-top:1px solid rgba(255,248,238,.12);
+  padding-bottom:var(--safe-bottom);
+  padding-left:var(--safe-left);
+  padding-right:var(--safe-right);
+  flex-shrink:0;
+  z-index:100;
+  box-shadow:0 -2px 20px rgba(0,0,0,.2);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:10px 4px;
+  border:none;background:none;cursor:pointer;
+  color:rgba(255,248,238,.45);
+  font-family:'DM Sans',sans-serif;font-size:.6rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  transition:color .18s,background .18s;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.nav-item:active{background:rgba(255,255,255,.08)}
+.nav-item.active{color:#fff8ee}
+.nav-item.active::after{
+  content:'';position:absolute;top:0;left:25%;right:25%;height:2.5px;
+  background:var(--accent2);border-radius:0 0 3px 3px;
+}
+.nav-icon{font-size:1.35rem;line-height:1}
+.nav-item[style*="none"]{display:none}
 
 /* ═══ MODAL ══════════════════════════════════════ */
-.overlay{display:none;position:fixed;inset:0;background:rgba(35,24,9,.5);backdrop-filter:blur(4px);z-index:200;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(20,10,2,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 @media(min-width:768px){.overlay{align-items:center}}
-.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:94vh;overflow-y:auto;animation:slideUp .25s ease}
-@media(min-width:768px){.modal{border-radius:20px;max-height:90vh}}
-@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-hd{background:var(--accent);color:#fff8ee;padding:18px 20px 14px;border-radius:20px 20px 0 0;position:sticky;top:0;z-index:10;display:flex;align-items:flex-start;justify-content:space-between}
-@media(min-width:768px){.modal-hd{border-radius:20px 20px 0 0}}
-.modal-title{font-family:'Playfair Display',serif;font-size:1.2rem}
-.modal-cat-lbl{font-size:.68rem;opacity:.65;letter-spacing:.07em;text-transform:uppercase;margin-top:3px}
-.modal-close{background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;transition:background .15s}
-.modal-close:hover{background:rgba(255,255,255,.3)}
+.modal{
+  background:var(--surface);
+  border-radius:24px 24px 0 0;
+  width:100%;max-width:680px;
+  max-height:94vh;max-height:94dvh;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:slideUp .28s cubic-bezier(.22,1,.36,1);
+}
+@media(min-width:768px){.modal{border-radius:24px;max-height:90vh}}
+@keyframes slideUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{
+  background:var(--accent);
+  color:#fff8ee;
+  padding:20px 20px 16px;
+  border-radius:24px 24px 0 0;
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:flex-start;justify-content:space-between;
+}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.25rem}
+.modal-cat-lbl{font-size:.65rem;opacity:.55;letter-spacing:.09em;text-transform:uppercase;margin-top:4px}
+.modal-close{
+  background:rgba(255,255,255,.16);border:none;color:#fff;
+  width:32px;height:32px;border-radius:50%;font-size:1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;transition:background .15s;
+}
+.modal-close:hover{background:rgba(255,255,255,.28)}
 .modal-body{padding:20px}
 
 /* ═══ RECIPE VIEW ════════════════════════════════ */
-.recipe-photo{width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:16px;display:block}
+.recipe-photo{width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:16px;display:block}
 .info-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-.pill{background:#ede4d0;border-radius:8px;padding:6px 11px;font-size:.8rem;color:var(--accent);display:flex;align-items:center;gap:5px}
+.pill{background:#ede4d0;border-radius:10px;padding:7px 12px;font-size:.8rem;color:var(--accent);display:flex;align-items:center;gap:5px;font-weight:500}
 .rsec{margin-bottom:20px}
 .rsec h3{font-family:'Playfair Display',serif;font-size:.97rem;font-weight:500;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:12px}
 .ing-tbl{width:100%;border-collapse:collapse;font-size:.87rem}
 .ing-tbl thead tr{background:#ede4d0}
-.ing-tbl th{text-align:left;padding:7px 10px;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500}
+.ing-tbl th{text-align:left;padding:7px 10px;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
 .ing-tbl td{padding:8px 10px;border-bottom:1px solid var(--border)}
 .ing-tbl tr:last-child td{border-bottom:none}
 .steps-ol{list-style:none;counter-reset:st}
-.steps-ol li{counter-increment:st;display:flex;gap:11px;margin-bottom:10px;font-size:.88rem;line-height:1.55}
-.steps-ol li::before{content:counter(st);background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:2px}
-.notes-box{background:#fffae0;border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:10px 14px;font-size:.87rem;line-height:1.55;color:#5a3e10}
-.empty-st{text-align:center;padding:20px 0 10px}
-.empty-icon{font-size:2.4rem;margin-bottom:8px}
-.empty-txt{color:var(--muted);font-size:.88rem;margin-bottom:20px;line-height:1.55}
-
-/* ═══ META INFO (author + date) ══════════════════ */
-.meta-info{background:#f0ead8;border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:.78rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.steps-ol li{counter-increment:st;display:flex;gap:12px;margin-bottom:12px;font-size:.88rem;line-height:1.6}
+.steps-ol li::before{content:counter(st);background:var(--accent);color:#fff8ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.notes-box{background:#fffae0;border-left:3px solid var(--accent2);border-radius:0 10px 10px 0;padding:11px 15px;font-size:.87rem;line-height:1.6;color:#5a3e10}
+.empty-st{text-align:center;padding:24px 0 12px}
+.empty-icon{font-size:2.6rem;margin-bottom:10px}
+.empty-txt{color:var(--muted);font-size:.88rem;margin-bottom:22px;line-height:1.6}
+.meta-info{background:#f0ead8;border:1px solid var(--border);border-radius:12px;padding:11px 15px;margin-bottom:18px;font-size:.78rem;color:var(--muted);display:flex;flex-direction:column;gap:5px}
 .meta-row{display:flex;align-items:center;gap:6px}
-.meta-row .label{font-weight:600;color:var(--accent);min-width:70px}
+.meta-row .label{font-weight:700;color:var(--accent);min-width:68px}
 
 /* ═══ FORM ═══════════════════════════════════════ */
 .fsec{margin-bottom:20px}
 .fsec h3{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fg label{display:block;font-size:.74rem;font-weight:500;margin-bottom:5px;color:var(--muted);letter-spacing:.04em}
-.fg input,.fg textarea,.fg select{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--text);background:#f8f3e8;outline:none;transition:border-color .2s;resize:vertical}
-.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent2)}
-.ing-hd{display:grid;grid-template-columns:1fr 72px 62px 26px;gap:6px;margin-bottom:5px}
+.fg label{display:block;font-size:.72rem;font-weight:600;margin-bottom:6px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.fg input,.fg textarea,.fg select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);background:#f9f4ea;outline:none;transition:border-color .2s,box-shadow .2s;resize:vertical;-webkit-appearance:none}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(184,113,30,.12)}
+.ing-hd{display:grid;grid-template-columns:1fr 72px 62px 28px;gap:6px;margin-bottom:5px}
 .ing-hd span{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:0 4px}
-.ing-row{display:grid;grid-template-columns:1fr 72px 62px 26px;gap:6px;align-items:center;margin-bottom:7px}
+.ing-row{display:grid;grid-template-columns:1fr 72px 62px 28px;gap:6px;align-items:center;margin-bottom:8px}
 .ing-row input{margin:0}
-.ing-del{background:none;border:none;color:var(--red);font-size:1rem;cursor:pointer;padding:0;transition:transform .15s}
-.ing-del:hover{transform:scale(1.2)}
-.add-row{background:none;border:1.5px dashed var(--border);border-radius:8px;width:100%;padding:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px}
+.ing-del{background:none;border:none;color:var(--red);font-size:1.1rem;cursor:pointer;padding:0;transition:transform .15s}
+.ing-del:hover{transform:scale(1.25)}
+.add-row{background:none;border:1.5px dashed var(--border);border-radius:10px;width:100%;padding:9px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px}
 .add-row:hover{border-color:var(--accent);color:var(--accent)}
-
-/* PHOTO UPLOAD */
 .photo-btns{display:flex;gap:8px;margin-bottom:10px}
-.photo-btn{flex:1;padding:11px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .18s;font-weight:500}
+.photo-btn{flex:1;padding:12px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;font-weight:500}
 .photo-btn:hover{border-color:var(--accent);background:#f0e8d8}
-.photo-preview-wrap{position:relative;width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#ede4d0;margin-bottom:8px;border:1.5px solid var(--border)}
-.photo-preview-wrap img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
-.photo-no-preview{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#ede4d0,#f5edd8);border-radius:12px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:.84rem;gap:6px;margin-bottom:8px}
-.photo-no-preview span{font-size:2rem}
-.crop-container{position:relative;width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#111;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.photo-preview-wrap{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#ede4d0;margin-bottom:8px;border:1.5px solid var(--border)}
+.photo-preview-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-no-preview{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#ede4d0,#f5edd8);border-radius:14px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:.84rem;gap:7px;margin-bottom:8px}
+.photo-no-preview span{font-size:2.2rem}
+.crop-container{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#111;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .crop-container:active{cursor:grabbing}
 .crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none;will-change:transform}
-.crop-hint{text-align:center;color:var(--muted);font-size:.78rem;margin:8px 0 14px;display:flex;align-items:center;justify-content:center;gap:6px}
-
-@media(max-width:480px){
-  .topbar{padding:calc(env(safe-area-inset-top, 0px) + 14px) max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px))}
-  .topbar-right{gap:8px}
-  .user-pill{padding:4px 10px;font-size:.72rem}
-  .controls{padding:12px max(16px,env(safe-area-inset-left,0px)) 0}
-  .grid-wrap{padding:0 max(14px,env(safe-area-inset-left,0px)) 100px}
-  .stats{padding:8px max(16px,env(safe-area-inset-left,0px)) 8px}
-  .modal-body{padding:16px max(14px,env(safe-area-inset-left,0px)) 20px}
-  .modal-hd{padding:16px max(14px,env(safe-area-inset-left,0px)) 12px}
-  .fab{right:max(18px,env(safe-area-inset-right,0px));bottom:max(22px,env(safe-area-inset-bottom,0px))}
-  .ing-row{grid-template-columns:1fr 60px 52px 26px}
-}
+.crop-hint{text-align:center;color:var(--muted);font-size:.78rem;margin:9px 0 14px;display:flex;align-items:center;justify-content:center;gap:6px}
 
 /* BTNS */
-.btn{border:none;border-radius:9px;padding:11px 20px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
-.btn-pri{background:var(--accent);color:#fff}.btn-pri:hover{background:var(--accent2)}
-.btn-sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}.btn-sec:hover{background:var(--accent);color:#fff}
+.btn{border:none;border-radius:11px;padding:12px 22px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .18s}
+.btn-pri{background:var(--accent);color:#fff8ee}.btn-pri:hover{background:var(--accent2)}
+.btn-sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}.btn-sec:hover{background:var(--accent);color:#fff8ee}
 .btn-dan{background:transparent;color:var(--red);border:1.5px solid var(--red);margin-left:auto}.btn-dan:hover{background:var(--red);color:#fff}
 .btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
-/* ═══ ADMIN PANEL ════════════════════════════════ */
-.admin-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0;overflow-x:auto}
-.atab{background:none;border:none;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s;border-radius:6px 6px 0 0;white-space:nowrap}
-.atab:hover{color:var(--accent);background:#f0e8d8}
-.atab.active{color:var(--accent);border-bottom-color:var(--accent);background:#f8f3e8}
+/* ═══ ADMIN PAGE ═════════════════════════════════ */
+.admin-page{flex:1;overflow-y:auto;padding:0 0 20px;-webkit-overflow-scrolling:touch}
+.admin-header{background:var(--accent);padding:20px calc(var(--safe-right) + 20px) 0 calc(var(--safe-left) + 20px);color:#fff8ee}
+.admin-header h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:4px}
+.admin-header p{font-size:.74rem;opacity:.6;letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
+.admin-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.admin-tabs::-webkit-scrollbar{display:none}
+.atab{background:none;border:none;padding:11px 16px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;color:rgba(255,248,238,.5);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .18s;white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
+.atab:hover{color:#fff8ee}
+.atab.active{color:#fff8ee;border-bottom-color:var(--accent2)}
+.admin-body{padding:20px}
 .admin-tab-content{display:none}.admin-tab-content.active{display:block}
 .admin-section{margin-bottom:28px}
-.admin-section h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--accent);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.admin-section h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--accent);margin-bottom:14px;padding-bottom:7px;border-bottom:1.5px solid var(--border)}
+
+/* USER LIST */
 .user-list{display:flex;flex-direction:column;gap:8px}
-.user-item{background:#f8f3e8;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.user-item-name{font-weight:500;font-size:.9rem}
-.user-item-info{font-size:.76rem;color:var(--muted)}
-.badge-admin{background:var(--accent);color:#fff;border-radius:50px;padding:2px 8px;font-size:.68rem;font-weight:600}
-.badge-viewer{background:#e0d5c0;color:var(--muted);border-radius:50px;padding:2px 8px;font-size:.68rem;font-weight:600}
+.user-item{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.user-item-name{font-weight:600;font-size:.9rem}
+.user-item-info{font-size:.76rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
+.badge-admin{background:var(--accent2);color:#fff;border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:700}
+.badge-gerente{background:var(--green);color:#fff;border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:700}
+.badge-operador{background:#e0d5c0;color:var(--muted);border-radius:50px;padding:2px 9px;font-size:.67rem;font-weight:600}
 .user-actions{display:flex;gap:6px;flex-shrink:0}
-.btn-sm{border:none;border-radius:7px;padding:6px 12px;font-size:.78rem;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.btn-sm{border:none;border-radius:8px;padding:7px 13px;font-size:.78rem;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:600}
 .btn-sm-edit{background:#e8d5b0;color:var(--accent)}.btn-sm-edit:hover{background:var(--accent);color:#fff}
 .btn-sm-del{background:#f5dada;color:var(--red)}.btn-sm-del:hover{background:var(--red);color:#fff}
-.dish-list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto}
-.dish-item{background:#f8f3e8;border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dish-item-name{font-weight:500;font-size:.88rem}
+
+/* STATUS TAG NO CARD */
+.card-status-tag{
+  position:absolute;top:8px;left:8px;
+  border-radius:6px;padding:3px 8px;
+  font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.cst-ok{background:rgba(46,92,56,.82);color:#d4f5dc}
+.cst-no{background:rgba(184,113,30,.82);color:#fff3dc}
+
+/* BOTÃO EDITAR RÁPIDO NO CARD */
+.card-edit-btn{
+  position:absolute;bottom:10px;right:9px;
+  background:rgba(92,50,20,.12);
+  border:1px solid rgba(92,50,20,.2);
+  border-radius:7px;
+  padding:3px 7px;font-size:.75rem;
+  cursor:pointer;color:var(--accent);
+  transition:all .15s;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+}
+.card-edit-btn:active{background:var(--accent);color:#fff}
+.card-body{position:relative;padding:10px 12px 28px}
+
+/* FILTROS DE STATUS CLICÁVEIS */
+.stat-filter{
+  display:flex;align-items:center;gap:5px;
+  cursor:pointer;border-radius:6px;
+  padding:3px 8px 3px 4px;
+  transition:all .15s;
+  border:1.5px solid transparent;
+  font-weight:500;
+}
+.stat-filter:active{transform:scale(.96)}
+.stat-filter-active{background:#e8f5ec;border-color:#4daa65;color:#2e5c38;font-weight:700}
+.stat-filter-active-no{background:#fef3e2;border-color:var(--accent2);color:var(--accent2)}
+
+
+.dish-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dish-item{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dish-item-name{font-weight:600;font-size:.88rem}
 .dish-item-info{font-size:.73rem;color:var(--muted);margin-top:1px}
-.dish-filter-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-.dish-filter-row input{flex:1;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none}
+.dish-filter-row{display:flex;gap:8px;margin-bottom:10px}
+.dish-filter-row input{flex:1;padding:8px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;-webkit-appearance:none}
 .dish-filter-row input:focus{border-color:var(--accent2)}
+
+/* STATS */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.stat-card{background:#f8f3e8;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px}
-.stat-num{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--accent)}
-.stat-lbl{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
-.cat-bar-wrap{margin-bottom:8px}
-.cat-bar-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text);margin-bottom:3px}
+.stat-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px}
+.stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--accent);line-height:1}
+.stat-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;font-weight:500}
+.cat-bar-wrap{margin-bottom:9px}
+.cat-bar-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text);margin-bottom:4px}
 .cat-bar{height:8px;background:#e8d5b0;border-radius:50px;overflow:hidden}
 .cat-bar-fill{height:100%;background:var(--accent);border-radius:50px;transition:width .4s ease}
 
-/* ═══ ACTIVITY LOG ═══════════════════════════════ */
-.log-list{display:flex;flex-direction:column;gap:6px;max-height:450px;overflow-y:auto}
-.log-item{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;background:#f8f3e8;border:1px solid var(--border);border-radius:10px}
+/* LOG */
+.log-list{display:flex;flex-direction:column;gap:7px}
+.log-item{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px}
 .log-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px}
 .log-content{flex:1;min-width:0}
 .log-action{font-size:.85rem;font-weight:500;color:var(--text)}
 .log-action strong{color:var(--accent)}
 .log-target{color:var(--accent2);font-weight:600}
-.log-time{font-size:.72rem;color:var(--muted);margin-top:2px}
+.log-time{font-size:.72rem;color:var(--muted);margin-top:3px}
 .log-empty{text-align:center;padding:30px;color:var(--muted);font-size:.88rem}
 
-/* ═══ TOAST ══════════════════════════════════════ */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--accent);color:#fff;padding:10px 22px;border-radius:50px;font-size:.84rem;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:500}
+/* PERFIL PAGE */
+.perfil-page{flex:1;overflow-y:auto;padding:20px calc(var(--safe-right)+16px) 20px calc(var(--safe-left)+16px);-webkit-overflow-scrolling:touch}
+.perfil-card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:28px;margin-bottom:14px;text-align:center;box-shadow:0 2px 12px rgba(30,18,8,.07)}
+.perfil-avatar{width:76px;height:76px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 16px;box-shadow:var(--shadow)}
+.perfil-name{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--accent);margin-bottom:4px}
+.perfil-username{font-size:.82rem;color:var(--muted);margin-bottom:14px}
+.perfil-role-tag{display:inline-block;border-radius:50px;padding:4px 18px;font-size:.8rem;font-weight:700}
+.perfil-section{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,18,8,.05)}
+.perfil-section h3{font-family:'Playfair Display',serif;font-size:.97rem;color:var(--accent);margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid var(--border)}
+.perm-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.87rem}
+.perm-item:last-child{border-bottom:none}
+.perm-icon{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0}
+.perm-ok{color:var(--green)}.perm-no{color:#ccc}
+.btn-logout{width:100%;padding:14px;border:1.5px solid var(--red);border-radius:12px;background:none;color:var(--red);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .18s;margin-top:6px}
+.btn-logout:hover{background:var(--red);color:#fff}
+
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:calc(var(--nav-h) + 20px + var(--safe-bottom));
+  left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--accent);
+  color:#fff8ee;
+  padding:11px 24px;
+  border-radius:50px;
+  font-size:.84rem;
+  font-weight:500;
+  opacity:0;
+  transition:all .3s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:500;
+  box-shadow:0 4px 20px rgba(30,18,8,.35);
+}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .loader{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:10px;font-size:.9rem}
-.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(min-width:768px){
@@ -317,34 +517,151 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
 <!-- APP -->
 <div id="app">
+  <!-- TOPBAR -->
   <div class="topbar">
     <div>
       <div class="topbar-logo">Toca do <em>Coelho</em></div>
-      <div class="topbar-sub">Receituário</div>
+      <div class="topbar-sub" id="pageTitle">Receituário</div>
     </div>
     <div class="topbar-right">
       <div class="sync-dot" id="syncDot" title="Sincronizado"></div>
       <div class="user-pill">
         <span id="userName">–</span>
-        <span class="role-badge" id="userRole">–</span>
+        <span class="role-badge" id="userRoleBadge">–</span>
       </div>
-      <button class="btn-icon" id="adminBtn" onclick="openAdmin()" title="Painel Admin" style="display:none">⚙️</button>
-      <button class="btn-icon" onclick="doLogout()" title="Sair">🚪</button>
     </div>
   </div>
 
-  <div class="controls">
-    <div class="search-wrap">
-      <span class="si">🔍</span>
-      <input type="text" id="searchInput" placeholder="Buscar prato…" oninput="renderGrid()">
+  <!-- PAGE: RECEITUÁRIO -->
+  <div class="page active" id="pageReceitas">
+    <div class="controls">
+      <div class="search-wrap">
+        <span class="si">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar prato…" oninput="renderGrid()">
+      </div>
+      <div class="chips" id="chips"></div>
     </div>
-    <div class="chips" id="chips"></div>
+    <div class="stats" id="stats"></div>
+    <div class="grid-wrap"><div class="grid" id="grid"></div></div>
   </div>
 
-  <div class="stats" id="stats"></div>
-  <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  <!-- PAGE: ADMIN / GERENTE -->
+  <div class="page" id="pageAdmin">
+    <div class="admin-page">
+      <div class="admin-header">
+        <h2 id="adminPanelTitle">⚙️ Painel Admin</h2>
+        <p id="adminPanelSub">Gerenciar receituário</p>
+        <div class="admin-tabs" id="adminTabs">
+          <button class="atab active" onclick="switchAdminTab('users')" id="tabBtnUsers">👥 Usuários</button>
+          <button class="atab" onclick="switchAdminTab('dishes')" id="tabBtnDishes">🍽️ Pratos</button>
+          <button class="atab" onclick="switchAdminTab('stats')" id="tabBtnStats">📊 Estatísticas</button>
+          <button class="atab" onclick="switchAdminTab('activity')" id="tabBtnActivity">📋 Atividades</button>
+        </div>
+      </div>
+      <div class="admin-body">
 
-  <button class="fab hidden" id="fabBtn" onclick="openAddDish()">＋ Novo Prato</button>
+        <!-- TAB USUÁRIOS (admin only) -->
+        <div class="admin-tab-content active" id="tabUsers">
+          <div class="admin-section">
+            <h3>Usuários Cadastrados</h3>
+            <div class="user-list" id="userList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+          <div class="admin-section">
+            <h3>Novo Usuário</h3>
+            <div class="fg2">
+              <div class="fg"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo"></div>
+              <div class="fg"><label>Usuário</label><input type="text" id="nuUser" placeholder="login"></div>
+            </div>
+            <div class="fg2">
+              <div class="fg"><label>Senha</label><input type="password" id="nuPass" placeholder="senha"></div>
+              <div class="fg"><label>Perfil</label>
+                <select id="nuRole">
+                  <option value="operador">Operador (só leitura)</option>
+                  <option value="gerente">Gerente (edita pratos/receitas)</option>
+                  <option value="admin">Admin (acesso total)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-pri" onclick="createUser()">Criar Usuário</button>
+          </div>
+        </div>
+
+        <!-- TAB PRATOS -->
+        <div class="admin-tab-content" id="tabDishes">
+          <div class="admin-section">
+            <h3>Gerenciar Pratos</h3>
+            <div class="dish-filter-row">
+              <input type="text" id="dishSearch" placeholder="🔍 Buscar prato…" oninput="renderAdminDishes()">
+            </div>
+            <div class="dish-list" id="adminDishList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+          <div class="admin-section">
+            <h3>Novo Prato</h3>
+            <div class="fg"><label>Nome do Prato *</label><input type="text" id="ndName" placeholder="Ex: Frango Assado"></div>
+            <div class="fg"><label>Categoria</label>
+              <select id="ndCat">
+                <option>Molhos e Caldos</option><option>Proteína Bovina</option><option>Proteína Ave</option>
+                <option>Proteína Suína</option><option>Peixe / Frutos do Mar</option><option selected>Acompanhamento</option>
+                <option>Quiche / Torta</option><option>Massa / Nhoque</option><option>Salada</option>
+                <option>Sobremesa</option><option>Outro</option>
+              </select>
+            </div>
+            <div class="fg"><label>Emoji (opcional)</label><input type="text" id="ndEmoji" placeholder="🍗" maxlength="4"></div>
+            <button class="btn btn-pri" onclick="adminAddDish()">Criar Prato</button>
+          </div>
+        </div>
+
+        <!-- TAB ESTATÍSTICAS -->
+        <div class="admin-tab-content" id="tabStats">
+          <div class="admin-section">
+            <h3>Resumo Geral</h3>
+            <div class="stat-grid" id="statGrid"></div>
+            <h3 style="margin-top:4px">Por Categoria</h3>
+            <div id="statCats"></div>
+          </div>
+        </div>
+
+        <!-- TAB ATIVIDADES -->
+        <div class="admin-tab-content" id="tabActivity">
+          <div class="admin-section">
+            <h3>Registro de Atividades</h3>
+            <div class="log-list" id="activityLog"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: PERFIL -->
+  <div class="page" id="pagePerfil">
+    <div class="perfil-page">
+      <div class="perfil-card">
+        <div class="perfil-avatar" id="perfilAvatar">👤</div>
+        <div class="perfil-name" id="perfilName">–</div>
+        <div class="perfil-username" id="perfilUsername">–</div>
+        <span class="perfil-role-tag" id="perfilRoleTag">–</span>
+      </div>
+      <div class="perfil-section">
+        <h3>Permissões do seu perfil</h3>
+        <div id="perfilPermList"></div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">🚪 Sair da conta</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="navReceitas" onclick="showPage('receitas')">
+      <span class="nav-icon">📖</span>Receituário
+    </button>
+    <button class="nav-item" id="navAdmin" onclick="showPage('admin')" style="display:none">
+      <span class="nav-icon">⚙️</span><span id="navAdminLabel">Admin</span>
+    </button>
+    <button class="nav-item" id="navPerfil" onclick="showPage('perfil')">
+      <span class="nav-icon">👤</span>Perfil
+    </button>
+  </nav>
 </div>
 
 <!-- Recipe Modal -->
@@ -358,104 +675,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
       <button class="modal-close" onclick="closeModal('recipeOverlay')">✕</button>
     </div>
     <div class="modal-body" id="mBody"></div>
-  </div>
-</div>
-
-<!-- Add Dish Modal -->
-<div class="overlay" id="addOverlay" onclick="bgClose(event,'addOverlay')">
-  <div class="modal">
-    <div class="modal-hd">
-      <div><div class="modal-title">Novo Prato</div><div class="modal-cat-lbl">Adicionar ao receituário</div></div>
-      <button class="modal-close" onclick="closeModal('addOverlay')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="fg"><label>Nome do Prato *</label><input type="text" id="newName" placeholder="Ex: Frango Assado"></div>
-      <div class="fg"><label>Categoria</label>
-        <select id="newCat">
-          <option>Molhos e Caldos</option><option>Proteína Bovina</option><option>Proteína Ave</option>
-          <option>Proteína Suína</option><option>Peixe / Frutos do Mar</option><option selected>Acompanhamento</option>
-          <option>Quiche / Torta</option><option>Massa / Nhoque</option><option>Salada</option>
-          <option>Sobremesa</option><option>Outro</option>
-        </select>
-      </div>
-      <div class="fg"><label>Emoji (opcional)</label><input type="text" id="newEmoji" placeholder="🍗" maxlength="4"></div>
-      <div class="btn-row">
-        <button class="btn btn-pri" onclick="addDish()">Criar Prato</button>
-        <button class="btn btn-sec" onclick="closeModal('addOverlay')">Cancelar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Admin Modal -->
-<div class="overlay" id="adminOverlay" onclick="bgClose(event,'adminOverlay')">
-  <div class="modal">
-    <div class="modal-hd">
-      <div><div class="modal-title">⚙️ Painel Admin</div><div class="modal-cat-lbl">Gerenciar receituário</div></div>
-      <button class="modal-close" onclick="closeModal('adminOverlay')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="admin-tabs">
-        <button class="atab active" onclick="switchAdminTab('users')">👥 Usuários</button>
-        <button class="atab" onclick="switchAdminTab('dishes')">🍽️ Pratos</button>
-        <button class="atab" onclick="switchAdminTab('stats')">📊 Estatísticas</button>
-        <button class="atab" onclick="switchAdminTab('activity')">📋 Atividades</button>
-      </div>
-
-      <!-- TAB: USUÁRIOS -->
-      <div class="admin-tab-content active" id="tabUsers">
-        <div class="admin-section">
-          <h3>Usuários Cadastrados</h3>
-          <div class="user-list" id="userList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
-        </div>
-        <div class="admin-section">
-          <h3>Novo Usuário</h3>
-          <div class="fg2">
-            <div class="fg"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo"></div>
-            <div class="fg"><label>Usuário</label><input type="text" id="nuUser" placeholder="login"></div>
-          </div>
-          <div class="fg2">
-            <div class="fg"><label>Senha</label><input type="password" id="nuPass" placeholder="senha"></div>
-            <div class="fg"><label>Perfil</label>
-              <select id="nuRole">
-                <option value="viewer">Funcionário (leitura)</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn btn-pri" onclick="createUser()">Criar Usuário</button>
-        </div>
-      </div>
-
-      <!-- TAB: PRATOS -->
-      <div class="admin-tab-content" id="tabDishes">
-        <div class="admin-section">
-          <h3>Gerenciar Pratos</h3>
-          <div class="dish-filter-row">
-            <input type="text" id="dishSearch" placeholder="🔍 Buscar prato…" oninput="renderAdminDishes()">
-          </div>
-          <div class="dish-list" id="adminDishList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
-        </div>
-      </div>
-
-      <!-- TAB: ESTATÍSTICAS -->
-      <div class="admin-tab-content" id="tabStats">
-        <div class="admin-section">
-          <h3>Resumo Geral</h3>
-          <div class="stat-grid" id="statGrid"></div>
-          <h3 style="margin-top:4px">Por Categoria</h3>
-          <div id="statCats"></div>
-        </div>
-      </div>
-
-      <!-- TAB: ATIVIDADES -->
-      <div class="admin-tab-content" id="tabActivity">
-        <div class="admin-section">
-          <h3>Registro de Atividades</h3>
-          <div class="log-list" id="activityLog"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -499,8 +718,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
       <div class="fg"><label>Nova Senha (deixe vazio para manter)</label><input type="password" id="euPass" placeholder="nova senha"></div>
       <div class="fg"><label>Perfil</label>
         <select id="euRole">
-          <option value="viewer">Funcionário (leitura)</option>
-          <option value="admin">Admin</option>
+          <option value="operador">Operador (só leitura)</option>
+          <option value="gerente">Gerente (edita pratos/receitas)</option>
+          <option value="admin">Admin (acesso total)</option>
         </select>
       </div>
       <div class="btn-row">
@@ -576,12 +796,16 @@ let dishes = [];
 let currentDish = null;
 let editing = false;
 let activeFilter = 'Todos';
+let statusFilter = 'todos'; // 'todos' | 'com' | 'sem'
 let ingData = [];
 let pendingPhoto = null;
 let lastSyncTime = '2000-01-01';
 let syncInterval = null;
+let currentAdminTab = 'users';
 
-const isAdmin = () => currentUser?.role === 'admin';
+const isAdmin   = () => currentUser?.role === 'admin';
+const isGerente = () => currentUser?.role === 'gerente';
+const canEdit   = () => ['admin','gerente'].includes(currentUser?.role);
 
 // ══════════════════════════════════════════
 //  API
@@ -609,7 +833,36 @@ async function apiUpload(path, file) {
 }
 
 // ══════════════════════════════════════════
-//  SYNC — auto-refresh a cada 15 segundos
+//  NAVIGATION
+// ══════════════════════════════════════════
+const pageTitles = {
+  receitas: 'Receituário',
+  admin: isAdmin() ? 'Admin' : 'Gerente',
+  perfil: 'Meu Perfil',
+};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  if (page === 'receitas') {
+    document.getElementById('pageReceitas').classList.add('active');
+    document.getElementById('navReceitas').classList.add('active');
+    document.getElementById('pageTitle').textContent = 'Receituário';
+  } else if (page === 'admin') {
+    document.getElementById('pageAdmin').classList.add('active');
+    document.getElementById('navAdmin').classList.add('active');
+    document.getElementById('pageTitle').textContent = isAdmin() ? 'Painel Admin' : 'Painel Gerente';
+    loadCurrentAdminTab();
+  } else if (page === 'perfil') {
+    document.getElementById('pagePerfil').classList.add('active');
+    document.getElementById('navPerfil').classList.add('active');
+    document.getElementById('pageTitle').textContent = 'Meu Perfil';
+  }
+}
+
+// ══════════════════════════════════════════
+//  SYNC — mais robusto
 // ══════════════════════════════════════════
 async function checkSync() {
   try {
@@ -619,11 +872,17 @@ async function checkSync() {
     if (data.needsRefresh) {
       dot.classList.add('stale');
       await loadDishes();
-      lastSyncTime = data.latest;
+      lastSyncTime = data.serverNow || data.latest;
       dot.classList.remove('stale');
       dot.title = 'Sincronizado — ' + fmtDate(data.latest);
+    } else {
+      // Atualiza o lastSyncTime para o tempo do servidor mesmo sem mudanças
+      if (data.serverNow) lastSyncTime = data.serverNow;
+      dot.title = 'Sincronizado';
     }
-  } catch(e) { /* offline, ignore */ }
+  } catch(e) {
+    document.getElementById('syncDot').classList.add('stale');
+  }
 }
 
 function startSync() {
@@ -684,17 +943,77 @@ window.addEventListener('load', () => {
   }, 1800);
 });
 
+const ROLE_LABELS = { admin: 'Admin', gerente: 'Gerente', operador: 'Operador' };
+const ROLE_BADGE_CLASS = { admin: 'rb-admin', gerente: 'rb-gerente', operador: 'rb-operador' };
+const ROLE_TAG_STYLE = {
+  admin: 'background:var(--accent2);color:#fff',
+  gerente: 'background:var(--green);color:#fff',
+  operador: 'background:#e0d5c0;color:var(--muted)',
+};
+
 async function startApp() {
   document.getElementById('loginScreen').classList.remove('active');
   document.getElementById('app').classList.add('active');
-  document.getElementById('userName').textContent = currentUser.name;
-  document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Admin' : 'Funcionário';
-  if (isAdmin()) {
-    document.getElementById('adminBtn').style.display = 'flex';
-    document.getElementById('fabBtn').classList.remove('hidden');
+
+  // topbar
+  document.getElementById('userName').textContent = currentUser.name.split(' ')[0];
+  const badge = document.getElementById('userRoleBadge');
+  badge.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+  badge.className = 'role-badge ' + (ROLE_BADGE_CLASS[currentUser.role] || '');
+
+  // nav visibility
+  if (canEdit()) {
+    const navAdmin = document.getElementById('navAdmin');
+    navAdmin.style.display = 'flex';
+    document.getElementById('navAdminLabel').textContent = isAdmin() ? 'Admin' : 'Gerente';
+    // admin panel title
+    document.getElementById('adminPanelTitle').textContent = isAdmin() ? '⚙️ Painel Admin' : '⚙️ Painel Gerente';
+    document.getElementById('adminPanelSub').textContent = isAdmin() ? 'Gestão completa' : 'Pratos e receitas';
+    // hide users tab for gerente
+    if (!isAdmin()) {
+      document.getElementById('tabBtnUsers').style.display = 'none';
+      // show dishes tab as first active
+      switchAdminTab('dishes');
+    }
   }
+
+  // perfil page
+  renderPerfil();
+
   await loadDishes();
   startSync();
+}
+
+// ══════════════════════════════════════════
+//  PERFIL PAGE
+// ══════════════════════════════════════════
+function renderPerfil() {
+  const u = currentUser;
+  document.getElementById('perfilName').textContent = u.name;
+  document.getElementById('perfilUsername').textContent = '@' + u.username;
+  const roleTag = document.getElementById('perfilRoleTag');
+  roleTag.textContent = ROLE_LABELS[u.role] || u.role;
+  roleTag.style.cssText = ROLE_TAG_STYLE[u.role] || '';
+
+  const emojis = { admin: '👑', gerente: '🍳', operador: '👀' };
+  document.getElementById('perfilAvatar').textContent = emojis[u.role] || '👤';
+
+  const perms = [
+    { ok: true, label: 'Visualizar receitas e pratos' },
+    { ok: canEdit(), label: 'Criar e editar pratos' },
+    { ok: canEdit(), label: 'Criar e editar receitas' },
+    { ok: canEdit(), label: 'Enviar fotos de pratos' },
+    { ok: isAdmin(), label: 'Gerenciar usuários' },
+    { ok: isAdmin(), label: 'Ver log de atividades' },
+    { ok: isAdmin(), label: 'Excluir pratos' },
+  ];
+
+  document.getElementById('perfilPermList').innerHTML = perms.map(p => `
+    <div class="perm-item">
+      <span class="perm-icon ${p.ok ? 'perm-ok' : 'perm-no'}">${p.ok ? '✅' : '🔒'}</span>
+      <span style="color:${p.ok ? 'var(--text)' : 'var(--muted)'}">${p.label}</span>
+    </div>
+  `).join('');
 }
 
 // ══════════════════════════════════════════
@@ -719,19 +1038,26 @@ function renderChips() {
 }
 
 function setFilter(c) { activeFilter = c; renderChips(); renderGrid(); }
+function setStatusFilter(s) { statusFilter = s; renderStats(); renderGrid(); }
 
 function renderStats() {
   const ok = dishes.filter(d => d.has_recipe).length;
+  const no = dishes.length - ok;
   document.getElementById('stats').innerHTML = `
-    <span><div class="dot dot-ok"></div>${ok} com receita</span>
-    <span><div class="dot dot-no"></div>${dishes.length - ok} sem receita</span>
-    <span style="margin-left:auto">${dishes.length} pratos</span>`;
+    <span class="stat-filter ${statusFilter==='com'?'stat-filter-active':''}" onclick="setStatusFilter(statusFilter==='com'?'todos':'com')">
+      <div class="dot dot-ok"></div>${ok} com receita
+    </span>
+    <span class="stat-filter ${statusFilter==='sem'?'stat-filter-active stat-filter-active-no':''}" onclick="setStatusFilter(statusFilter==='sem'?'todos':'sem')">
+      <div class="dot dot-no"></div>${no} sem receita
+    </span>
+    <span style="margin-left:auto;font-size:.7rem">${dishes.length} pratos</span>`;
 }
 
 function renderGrid() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const list = dishes.filter(d =>
     (activeFilter === 'Todos' || d.category === activeFilter) &&
+    (statusFilter === 'todos' || (statusFilter === 'com' ? d.has_recipe : !d.has_recipe)) &&
     (!q || d.name.toLowerCase().includes(q))
   );
   const g = document.getElementById('grid');
@@ -741,7 +1067,7 @@ function renderGrid() {
   }
   g.innerHTML = list.map(d => `
     <div class="card" onclick="openDish(${d.id})">
-      <div class="card-badge ${d.has_recipe ? 'cb-ok' : 'cb-no'}"></div>
+      <div class="card-status-tag ${d.has_recipe ? 'cst-ok' : 'cst-no'}">${d.has_recipe ? '✓ Pronto' : 'Pendente'}</div>
       ${d.photo_url
         ? `<img class="card-photo" src="${esc(d.photo_url)}" alt="${esc(d.name)}" loading="lazy">`
         : `<div class="card-no-photo">${d.emoji || '🍽️'}</div>`
@@ -749,14 +1075,17 @@ function renderGrid() {
       <div class="card-body">
         <div class="card-name">${esc(d.name)}</div>
         <div class="card-cat">${esc(d.category)}</div>
+        ${canEdit() ? `<button class="card-edit-btn" onclick="event.stopPropagation();quickEditDish(${d.id},'${esc(d.name).replace(/'/g,"\\'")}','${esc(d.category)}','${esc(d.emoji||'')}')">✏️</button>` : ''}
       </div>
     </div>
   `).join('');
 }
 
-// ══════════════════════════════════════════
-//  DISH MODAL
-// ══════════════════════════════════════════
+// Quick edit dish from main grid
+function quickEditDish(id, name, category, emoji) {
+  openEditDish(id, name, category, emoji);
+}
+
 async function openDish(id) {
   editing = false; pendingPhoto = null;
   document.getElementById('mBody').innerHTML = '<div class="loader"><div class="spinner"></div>Carregando…</div>';
@@ -783,7 +1112,7 @@ function renderDishBody() {
         <div class="empty-icon">📋</div>
         <p class="empty-txt">Este prato ainda não tem receituário.<br>Quer preencher agora?</p>
         <div class="btn-row" style="justify-content:center">
-          ${isAdmin() ? `<button class="btn btn-pri" onclick="startEdit()">✏️ Preencher Receita</button>` : ''}
+          ${canEdit() ? `<button class="btn btn-pri" onclick="startEdit()">✏️ Preencher Receita</button>` : ''}
         </div>
       </div>`;
     return;
@@ -794,16 +1123,9 @@ function renderDishBody() {
     <div class="${d.photo_url ? 'recipe-desktop' : ''}">
       ${d.photo_url ? `<img class="recipe-photo" src="${esc(d.photo_url)}" alt="${esc(d.name)}">` : ''}
       <div>
-        <!-- META: quem criou / editou -->
         <div class="meta-info">
-          ${r.created_by_name ? `<div class="meta-row">
-            <span class="label">Criado:</span>
-            <span>${esc(r.created_by_name)} · ${fmtDate(r.created_at)}</span>
-          </div>` : ''}
-          ${r.updated_by_name ? `<div class="meta-row">
-            <span class="label">Editado:</span>
-            <span>${esc(r.updated_by_name)} · ${fmtDate(r.updated_at)}</span>
-          </div>` : ''}
+          ${r.created_by_name ? `<div class="meta-row"><span class="label">Criado:</span><span>${esc(r.created_by_name)} · ${fmtDate(r.created_at)}</span></div>` : ''}
+          ${r.updated_by_name ? `<div class="meta-row"><span class="label">Editado:</span><span>${esc(r.updated_by_name)} · ${fmtDate(r.updated_at)}</span></div>` : ''}
         </div>
 
         ${(r.rendimento || r.tempo_preparo || r.tempo_forno || r.custo) ? `
@@ -836,10 +1158,10 @@ function renderDishBody() {
         </div>` : ''}
       </div>
     </div>
-    ${isAdmin() ? `
+    ${canEdit() ? `
     <div class="btn-row">
       <button class="btn btn-pri" onclick="startEdit()">✏️ Editar Receita</button>
-      <button class="btn btn-dan" onclick="deleteRecipe()">🗑 Apagar Receita</button>
+      ${isAdmin() ? `<button class="btn btn-dan" onclick="deleteRecipe()">🗑 Apagar Receita</button>` : ''}
     </div>` : ''}`;
 }
 
@@ -1038,14 +1360,24 @@ async function removePhoto() {
 //  SAVE RECIPE
 // ══════════════════════════════════════════
 async function saveRecipe() {
-  syncIng();
+  // Força leitura dos valores atuais do DOM antes de qualquer coisa
+  document.querySelectorAll('.ing-row').forEach((row, i) => {
+    if (!ingData[i]) ingData[i] = {};
+    const ins = row.querySelectorAll('input');
+    ingData[i].nome = ins[0]?.value || '';
+    ingData[i].qtd  = ins[1]?.value || '';
+    ingData[i].un   = ins[2]?.value || '';
+  });
+
   const modo = (document.getElementById('fM').value || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const ingredientesFiltrados = ingData.filter(ig => ig.nome?.trim());
+
   const body = {
-    rendimento: document.getElementById('fR').value.trim(),
+    rendimento:    document.getElementById('fR').value.trim(),
     tempo_preparo: document.getElementById('fTP').value.trim(),
-    tempo_forno: document.getElementById('fTF').value.trim(),
-    custo: document.getElementById('fC').value.trim(),
-    ingredientes: ingData.filter(ig => ig.nome?.trim()),
+    tempo_forno:   document.getElementById('fTF').value.trim(),
+    custo:         document.getElementById('fC').value.trim(),
+    ingredientes:  ingredientesFiltrados,
     modo,
     observacoes: document.getElementById('fO').value.trim(),
   };
@@ -1060,11 +1392,12 @@ async function saveRecipe() {
     pendingPhoto = null;
   }
 
-  const hasContent = body.ingredientes.length > 0 || body.modo.length > 0 ||
+  const hasContent = ingredientesFiltrados.length > 0 || body.modo.length > 0 ||
     body.rendimento || body.tempo_preparo || body.tempo_forno || body.custo || body.observacoes;
 
   if (hasContent) {
-    await api('POST', `/dishes/${currentDish.id}/recipe`, body);
+    const res = await api('POST', `/dishes/${currentDish.id}/recipe`, body);
+    if (res?.error) { toast('❌ ' + res.error); return; }
     const idx = dishes.findIndex(x => x.id === currentDish.id);
     if (idx >= 0) dishes[idx].has_recipe = 1;
   }
@@ -1072,7 +1405,7 @@ async function saveRecipe() {
   const updated = await api('GET', `/dishes/${currentDish.id}`);
   currentDish = updated;
   const idx = dishes.findIndex(x => x.id === currentDish.id);
-  if (idx >= 0) dishes[idx] = { ...dishes[idx], photo_url: updated.photo_url };
+  if (idx >= 0) dishes[idx] = { ...dishes[idx], ...updated };
 
   editing = false;
   renderDishBody(); renderGrid(); renderStats();
@@ -1090,50 +1423,29 @@ async function deleteRecipe() {
 }
 
 // ══════════════════════════════════════════
-//  ADD DISH
-// ══════════════════════════════════════════
-function openAddDish() { document.getElementById('addOverlay').classList.add('open'); }
-
-async function addDish() {
-  const name = document.getElementById('newName').value.trim();
-  if (!name) { toast('⚠️ Digite o nome do prato'); return; }
-  const data = await api('POST', '/dishes', {
-    name,
-    category: document.getElementById('newCat').value,
-    emoji: document.getElementById('newEmoji').value.trim() || '🍽️',
-  });
-  dishes.push({ ...data, has_recipe: 0 });
-  renderChips(); renderGrid(); renderStats();
-  closeModal('addOverlay');
-  document.getElementById('newName').value = '';
-  document.getElementById('newEmoji').value = '';
-  toast('✅ Prato criado!');
-}
-
-// ══════════════════════════════════════════
 //  ADMIN PANEL
 // ══════════════════════════════════════════
 let adminAllDishes = [];
 
-async function openAdmin() {
-  document.getElementById('adminOverlay').classList.add('open');
-  switchAdminTab('users');
-}
-
 function switchAdminTab(tab) {
-  const tabs = ['users','dishes','stats','activity'];
-  document.querySelectorAll('.atab').forEach((b,i) => {
-    b.classList.toggle('active', tabs[i] === tab);
-  });
+  currentAdminTab = tab;
+  document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
-  const tabId = 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1);
-  document.getElementById(tabId).classList.add('active');
-  if (tab === 'users') loadUsers();
-  if (tab === 'dishes') loadAdminDishes();
-  if (tab === 'stats') renderAdminStats();
-  if (tab === 'activity') loadActivity();
+  const btnMap = { users:'tabBtnUsers', dishes:'tabBtnDishes', stats:'tabBtnStats', activity:'tabBtnActivity' };
+  const contentMap = { users:'tabUsers', dishes:'tabDishes', stats:'tabStats', activity:'tabActivity' };
+  document.getElementById(btnMap[tab])?.classList.add('active');
+  document.getElementById(contentMap[tab])?.classList.add('active');
+  loadCurrentAdminTab();
 }
 
+function loadCurrentAdminTab() {
+  if (currentAdminTab === 'users' && isAdmin()) loadUsers();
+  if (currentAdminTab === 'dishes') loadAdminDishes();
+  if (currentAdminTab === 'stats') renderAdminStats();
+  if (currentAdminTab === 'activity') loadActivity();
+}
+
+// ── USERS ──────────────────────────────────────────
 async function loadUsers() {
   const users = await api('GET', '/users');
   const list = document.getElementById('userList');
@@ -1142,7 +1454,10 @@ async function loadUsers() {
     <div class="user-item">
       <div>
         <div class="user-item-name">${esc(u.name)}</div>
-        <div class="user-item-info">@${esc(u.username)} · <span class="${u.role === 'admin' ? 'badge-admin' : 'badge-viewer'}">${u.role === 'admin' ? 'Admin' : 'Funcionário'}</span></div>
+        <div class="user-item-info">
+          @${esc(u.username)}
+          <span class="badge-${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
+        </div>
       </div>
       <div class="user-actions">
         <button class="btn-sm btn-sm-edit" onclick="openEditUser(${u.id},'${esc(u.name)}','${u.role}')">Editar</button>
@@ -1182,7 +1497,8 @@ async function saveUser() {
   const role = document.getElementById('euRole').value;
   const body = { name, role };
   if (password) body.password = password;
-  await api('PUT', `/users/${id}`, body);
+  const r = await api('PUT', `/users/${id}`, body);
+  if (r?.error) { toast('❌ ' + r.error); return; }
   closeModal('editUserOverlay');
   loadUsers();
   toast('✅ Usuário atualizado!');
@@ -1195,7 +1511,7 @@ async function deleteUser(id, name) {
   toast('🗑 Usuário excluído');
 }
 
-// ── DISHES ADMIN ────────────────────────────────
+// ── DISHES ADMIN ────────────────────────────────────
 async function loadAdminDishes() {
   const data = await api('GET', '/dishes');
   adminAllDishes = data || [];
@@ -1208,25 +1524,37 @@ function renderAdminDishes() {
   const el = document.getElementById('adminDishList');
   if (!list.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:10px 0">Nenhum prato encontrado.</p>'; return; }
   el.innerHTML = list.map(d => {
-    const authorInfo = d.recipe_author_name
-      ? `Receita por: ${esc(d.recipe_author_name)} · ${fmtDate(d.recipe_created_at)}`
-      : '';
-    const updaterInfo = d.recipe_updater_name && d.recipe_updater_name !== d.recipe_author_name
-      ? ` · Editado por: ${esc(d.recipe_updater_name)}`
-      : '';
+    const authorInfo = d.recipe_author_name ? `Receita: ${esc(d.recipe_author_name)} · ${fmtDate(d.recipe_created_at)}` : '';
     return `
     <div class="dish-item">
       <div>
         <div class="dish-item-name">${d.emoji || '🍽️'} ${esc(d.name)}</div>
         <div class="dish-item-info">${esc(d.category)} · ${d.has_recipe ? '<span style="color:#3a6645">✓ com receita</span>' : '<span style="color:var(--accent2)">sem receita</span>'}</div>
-        ${authorInfo ? `<div class="dish-item-info" style="margin-top:2px">${authorInfo}${updaterInfo}</div>` : ''}
+        ${authorInfo ? `<div class="dish-item-info" style="margin-top:1px">${authorInfo}</div>` : ''}
       </div>
       <div class="user-actions">
         <button class="btn-sm btn-sm-edit" onclick="openEditDish(${d.id},\`${esc(d.name)}\`,\`${esc(d.category)}\`,\`${esc(d.emoji||'')}\`)">Editar</button>
-        <button class="btn-sm btn-sm-del" onclick="adminDeleteDish(${d.id},\`${esc(d.name)}\`)">Excluir</button>
+        ${isAdmin() ? `<button class="btn-sm btn-sm-del" onclick="adminDeleteDish(${d.id},\`${esc(d.name)}\`)">Excluir</button>` : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+async function adminAddDish() {
+  const name = document.getElementById('ndName').value.trim();
+  if (!name) { toast('⚠️ Digite o nome do prato'); return; }
+  const data = await api('POST', '/dishes', {
+    name,
+    category: document.getElementById('ndCat').value,
+    emoji: document.getElementById('ndEmoji').value.trim() || '🍽️',
+  });
+  if (data.error) { toast('❌ ' + data.error); return; }
+  dishes.push({ ...data, has_recipe: 0 });
+  renderChips(); renderGrid(); renderStats();
+  document.getElementById('ndName').value = '';
+  document.getElementById('ndEmoji').value = '';
+  await loadAdminDishes();
+  toast('✅ Prato criado!');
 }
 
 function openEditDish(id, name, category, emoji) {
@@ -1262,7 +1590,7 @@ async function adminDeleteDish(id, name) {
   toast('🗑 Prato excluído');
 }
 
-// ── STATS ────────────────────────────────────────
+// ── STATS ──────────────────────────────────────────
 function renderAdminStats() {
   const total = dishes.length;
   const comReceita = dishes.filter(d => d.has_recipe).length;
@@ -1292,27 +1620,27 @@ function renderAdminStats() {
   }).join('');
 }
 
-// ── ACTIVITY LOG ────────────────────────────────
+// ── ACTIVITY ──────────────────────────────────────
 const actionIcons = {
-  login: '🔑', criar_receita: '📝', editar_receita: '✏️', excluir_receita: '🗑',
-  criar_prato: '➕', editar_prato: '✏️', excluir_prato: '🗑',
-  foto_prato: '📷', remover_foto: '🗑',
-  criar_usuario: '👤', editar_usuario: '👤', excluir_usuario: '🚫',
+  login:'🔑', criar_receita:'📝', editar_receita:'✏️', excluir_receita:'🗑',
+  criar_prato:'➕', editar_prato:'✏️', excluir_prato:'🗑',
+  foto_prato:'📷', remover_foto:'🗑',
+  criar_usuario:'👤', editar_usuario:'👤', excluir_usuario:'🚫',
 };
-
 const actionLabels = {
-  login: 'fez login', criar_receita: 'criou receita para', editar_receita: 'editou receita de',
-  excluir_receita: 'apagou receita de', criar_prato: 'criou o prato',
-  editar_prato: 'editou o prato', excluir_prato: 'excluiu o prato',
-  foto_prato: 'enviou foto de', remover_foto: 'removeu foto de',
-  criar_usuario: 'criou o usuário', editar_usuario: 'editou o usuário', excluir_usuario: 'excluiu o usuário',
+  login:'fez login', criar_receita:'criou receita para', editar_receita:'editou receita de',
+  excluir_receita:'apagou receita de', criar_prato:'criou o prato',
+  editar_prato:'editou o prato', excluir_prato:'excluiu o prato',
+  foto_prato:'enviou foto de', remover_foto:'removeu foto de',
+  criar_usuario:'criou o usuário', editar_usuario:'editou o usuário', excluir_usuario:'excluiu o usuário',
 };
 
 async function loadActivity() {
   const el = document.getElementById('activityLog');
   el.innerHTML = '<div class="loader"><div class="spinner"></div>Carregando…</div>';
   const logs = await api('GET', '/activity?limit=80');
-  if (!logs?.length) { el.innerHTML = '<div class="log-empty">📋 Nenhuma atividade registrada ainda.</div>'; return; }
+  if (!logs || logs.error) { el.innerHTML = '<div class="log-empty">Sem acesso ao log.</div>'; return; }
+  if (!logs.length) { el.innerHTML = '<div class="log-empty">📋 Nenhuma atividade ainda.</div>'; return; }
 
   el.innerHTML = logs.map(l => `
     <div class="log-item">
@@ -1333,7 +1661,7 @@ async function loadActivity() {
 // ═══ KEYBOARD ═══
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    ['recipeOverlay','addOverlay','adminOverlay','editUserOverlay','editDishOverlay','cropOverlay'].forEach(closeModal);
+    ['recipeOverlay','editDishOverlay','editUserOverlay','cropOverlay'].forEach(closeModal);
   }
 });
 </script>
