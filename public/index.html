@@ -1388,9 +1388,14 @@ function confirmCrop() {
     }, 'image/jpeg', 0.82);
   };
   clean.onerror = function() {
-    toast('❌ Erro ao processar imagem');
+    toast('❌ Erro imagem. dataURL: ' + (cropDataURL ? cropDataURL.length + 'chars' : 'NULL'));
   };
-  clean.src = cropDataURL;
+  if (!cropDataURL) {
+    toast('❌ cropDataURL vazio — tentando img.src');
+    clean.src = img.src;
+  } else {
+    clean.src = cropDataURL;
+  }
 }
 
 async function removePhoto() {
