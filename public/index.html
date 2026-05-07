@@ -1349,21 +1349,29 @@ function confirmCrop() {
   const sy = Math.max(0, -cropOffY * scaleY);
   const sw = Math.min(cW * scaleX, cropNaturalW - sx);
   const sh = Math.min(cH * scaleY, cropNaturalH - sy);
-  const maxW = 1200;
+
+  // Limitar tamanho máximo para evitar limite de canvas no iOS Safari (max ~4096px)
+  const maxW = 800;
   const outW = Math.round(Math.min(sw, maxW));
   const outH = Math.round(outW * 3 / 4);
 
-  // Cria imagem limpa a partir do src (dataURL) — evita problemas com CSS transform no canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+
   const clean = new Image();
   clean.onload = function() {
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, outW, outH);
-    ctx.drawImage(clean, sx, sy, sw, sh, 0, 0, outW, outH);
-    canvas.toBlob(blob => {
+    try {
+      ctx.drawImage(clean, sx, sy, sw, sh, 0, 0, outW, outH);
+    } catch(err) {
+      // fallback: desenha a imagem inteira redimensionada
+      ctx.drawImage(clean, 0, 0, outW, outH);
+    }
+    canvas.toBlob(function(blob) {
+      if (!blob) { toast('❌ Erro ao gerar foto'); return; }
       pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
       const url = URL.createObjectURL(blob);
       const preview = document.getElementById('photoPreview');
@@ -1372,14 +1380,17 @@ function confirmCrop() {
       else if (noPreview) {
         const wrap = document.createElement('div');
         wrap.className = 'photo-preview-wrap';
-        wrap.innerHTML = `<img id="photoPreview" src="${url}" alt="">`;
+        wrap.innerHTML = '<img id="photoPreview" src="' + url + '" alt="">';
         noPreview.replaceWith(wrap);
       }
       document.getElementById('cropOverlay').classList.remove('open');
       toast('📷 Foto pronta — salve a receita para confirmar');
-    }, 'image/jpeg', 0.85);
+    }, 'image/jpeg', 0.82);
   };
-  clean.src = cropDataURL; // usa o dataURL guardado globalmente
+  clean.onerror = function() {
+    toast('❌ Erro ao processar imagem');
+  };
+  clean.src = cropDataURL;
 }
 
 async function removePhoto() {
