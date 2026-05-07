@@ -333,7 +333,7 @@ body{
 .photo-no-preview span{font-size:2.2rem}
 .crop-container{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#111;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .crop-container:active{cursor:grabbing}
-.crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none;will-change:transform}
+.crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none}
 .crop-hint{text-align:center;color:var(--muted);font-size:.78rem;margin:9px 0 14px;display:flex;align-items:center;justify-content:center;gap:6px}
 
 /* BTNS */
@@ -1288,30 +1288,27 @@ let cropNaturalW=0,cropNaturalH=0,cropDispW=0,cropDispH=0;
 let cropOffX=0,cropOffY=0,cropDragging=false;
 let cropStartX=0,cropStartY=0,cropStartOffX=0,cropStartOffY=0;
 let cropOrigFile=null;
+let cropDataURL=null;
 
-async function startCrop(e) {
+function startCrop(e) {
   const file = e.target.files[0]; e.target.value = '';
   if (!file) return;
   cropOrigFile = file;
   const img = document.getElementById('cropImg');
-  toast('⏳ Carregando foto...');
+  // Limpa src anterior para forçar novo onload
+  img.src = '';
   const reader = new FileReader();
   reader.onload = ev => {
-    const dataURL = ev.target.result;
-    toast('📦 Arquivo lido: ' + Math.round(dataURL.length/1024) + 'KB, tipo: ' + file.type);
-    img.onerror = (err) => {
-      toast('❌ Erro ao carregar img: ' + JSON.stringify(err.type));
-    };
     img.onload = () => {
-      toast('✅ Img carregada: ' + img.naturalWidth + 'x' + img.naturalHeight);
       cropNaturalW = img.naturalWidth;
       cropNaturalH = img.naturalHeight;
       initCropTool();
       document.getElementById('cropOverlay').classList.add('open');
     };
-    img.src = dataURL;
+    img.onerror = () => toast('❌ Erro ao carregar imagem');
+    cropDataURL = ev.target.result;
+    img.src = cropDataURL;
   };
-  reader.onerror = () => toast('❌ Erro no FileReader');
   reader.readAsDataURL(file);
 }
 
@@ -1341,7 +1338,7 @@ function clampCrop() {
 }
 
 function applyCropPos() { document.getElementById('cropImg').style.transform = `translate(${cropOffX}px, ${cropOffY}px)`; }
-function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; }
+function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; cropDataURL = null; }
 
 function confirmCrop() {
   const container = document.getElementById('cropContainer');
@@ -1382,7 +1379,7 @@ function confirmCrop() {
       toast('📷 Foto pronta — salve a receita para confirmar');
     }, 'image/jpeg', 0.85);
   };
-  clean.src = img.src; // img.src já é o dataURL lido pelo FileReader
+  clean.src = cropDataURL; // usa o dataURL guardado globalmente
 }
 
 async function removePhoto() {
