@@ -333,7 +333,7 @@ body{
 .photo-no-preview span{font-size:2.2rem}
 .crop-container{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#111;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .crop-container:active{cursor:grabbing}
-.crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none;will-change:transform}
+.crop-container img{position:absolute;transform-origin:top left;pointer-events:none;-webkit-user-drag:none}
 .crop-hint{text-align:center;color:var(--muted);font-size:.78rem;margin:9px 0 14px;display:flex;align-items:center;justify-content:center;gap:6px}
 
 /* BTNS */
@@ -479,20 +479,70 @@ body{
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* BACKUP TAB */
-.backup-status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
-.bstat-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center}
-.bstat-icon{font-size:1.4rem;margin-bottom:4px}
-.bstat-label{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-.bstat-val{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--accent);margin-top:2px}
-.backup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.backup-name{font-size:.86rem;font-weight:600;color:var(--text)}
-.backup-meta{font-size:.73rem;color:var(--muted);margin-top:2px}
-
 @media(min-width:768px){
   .recipe-desktop{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
   .recipe-desktop .recipe-photo{margin-bottom:0}
 }
+
+/* ═══ PRINT STYLES ═══════════════════════════════ */
+@media print {
+  body{background:#fff!important;color:#000!important;font-size:11pt}
+  .topbar,.navbar,.overlay,.toast,.btn-row,.card-edit-btn,.chip-row,.search-wrap,.modal-close,
+  .print-hide,.no-print{display:none!important}
+  .modal{position:static!important;box-shadow:none!important;border-radius:0!important;max-height:none!important;overflow:visible!important;width:100%!important}
+  .modal-hd{background:transparent!important;color:#000!important;position:static!important}
+  .modal-title{color:#000!important;font-size:16pt!important}
+  .modal-body{padding:0!important;overflow:visible!important}
+  .recipe-photo{max-height:200px!important;border-radius:8px!important;page-break-inside:avoid}
+  .ing-tbl{width:100%;border-collapse:collapse}
+  .ing-tbl th,.ing-tbl td{border:1px solid #ccc;padding:4px 8px;font-size:10pt}
+  .steps-ol li{margin-bottom:6px;font-size:10pt}
+  .pill{border:1px solid #ccc;padding:2px 8px;font-size:9pt;display:inline-block;margin:2px}
+  .recipe-desktop{display:block!important}
+  .overlay{display:block!important;position:static!important;background:transparent!important;-webkit-backdrop-filter:none!important}
+}
+/* Térmica 80mm */
+@media print and (max-width:80mm) {
+  .recipe-photo{display:none!important}
+  .modal-title{font-size:12pt!important}
+  .ing-tbl th,.ing-tbl td{font-size:8pt;padding:2px 4px}
+  .steps-ol li{font-size:8pt}
+  .pill{font-size:7pt}
+}
+.print-format-btns{display:flex;gap:6px;flex-wrap:wrap}
+.print-fmt-btn{padding:8px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer;transition:all .18s;color:var(--accent)}
+.print-fmt-btn:hover{border-color:var(--accent);background:#f0e8d8}
+
+/* ═══ COOKING MODE ═══════════════════════════════ */
+.cook-overlay{display:none;position:fixed;inset:0;z-index:300;background:var(--bg);flex-direction:column;overflow:hidden}
+.cook-overlay.open{display:flex}
+.cook-header{background:var(--accent);color:#fff8ee;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;padding-top:calc(16px + var(--safe-top))}
+.cook-header h2{font-family:'Playfair Display',serif;font-size:1.1rem}
+.cook-close{background:none;border:none;color:#fff8ee;font-size:1.4rem;cursor:pointer;padding:8px}
+.cook-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cook-step-counter{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.cook-step-text{font-size:1.2rem;text-align:center;line-height:1.6;max-width:500px;padding:20px}
+.cook-timer{font-size:3rem;font-weight:700;color:var(--accent);margin:20px 0;font-variant-numeric:tabular-nums}
+.cook-timer-btn{padding:12px 28px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .18s}
+.cook-timer-start{background:var(--green);color:#fff}
+.cook-timer-stop{background:var(--red);color:#fff}
+.cook-footer{display:flex;gap:10px;padding:16px 20px;border-top:1.5px solid var(--border);padding-bottom:calc(16px + var(--safe-bottom))}
+.cook-footer button{flex:1;padding:14px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .18s}
+.cook-prev{background:var(--surface);color:var(--accent)}
+.cook-next{background:var(--accent);color:#fff8ee;border-color:var(--accent)!important}
+
+/* ═══ INGREDIENT SEARCH ═══════════════════════════ */
+.search-toggle{display:flex;gap:0;margin-bottom:10px}
+.search-toggle button{flex:1;padding:8px;border:1.5px solid var(--border);background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;color:var(--muted);transition:all .15s}
+.search-toggle button:first-child{border-radius:10px 0 0 10px}
+.search-toggle button:last-child{border-radius:0 10px 10px 0}
+.search-toggle button.active{background:var(--accent);color:#fff8ee;border-color:var(--accent)}
+.ing-match{font-size:.7rem;color:var(--accent2);margin-top:2px;font-style:italic}
+
+/* ═══ ACTION BUTTONS ROW ═══════════════════════════ */
+.action-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.action-btn{padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--accent);transition:all .18s;font-weight:500}
+.action-btn:hover{border-color:var(--accent);background:#f0e8d8}
 </style>
 </head>
 <body>
@@ -545,9 +595,13 @@ body{
   <!-- PAGE: RECEITUÁRIO -->
   <div class="page active" id="pageReceitas">
     <div class="controls">
+      <div class="search-toggle">
+        <button class="active" id="searchByName" onclick="setSearchMode('name')">🍽️ Por Prato</button>
+        <button id="searchByIng" onclick="setSearchMode('ingredient')">🧂 Por Ingrediente</button>
+      </div>
       <div class="search-wrap">
         <span class="si">🔍</span>
-        <input type="text" id="searchInput" placeholder="Buscar prato…" oninput="renderGrid()">
+        <input type="text" id="searchInput" placeholder="Buscar prato…" oninput="handleSearch()">
       </div>
       <div class="chips" id="chips"></div>
     </div>
@@ -640,20 +694,18 @@ body{
           </div>
         </div>
 
-        <!-- TAB BACKUP -->
         <div class="admin-tab-content" id="tabBackup">
           <div class="admin-section">
-            <h3>Status do Banco de Dados</h3>
-            <div id="backupStatus"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+            <h3>💾 Backup do Banco de Dados</h3>
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:18px">Baixe uma cópia completa do banco com todas as receitas, ingredientes e usuários.</p>
+            <button class="btn-login" onclick="downloadBackup()" style="max-width:280px;display:flex;align-items:center;justify-content:center;gap:8px">
+              💾 Baixar Backup Agora
+            </button>
+            <div id="backupStatus" style="margin-top:16px;font-size:.85rem;color:var(--muted)"></div>
           </div>
           <div class="admin-section">
-            <h3>Download Manual</h3>
-            <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;line-height:1.55">Baixa uma cópia completa do banco agora. Guarde no seu computador como segurança extra.</p>
-            <button class="btn btn-pri" onclick="downloadBackup()">⬇️ Baixar Banco Agora</button>
-          </div>
-          <div class="admin-section">
-            <h3>Backups Automáticos</h3>
-            <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;line-height:1.55">O sistema cria um backup automático a cada 6 horas. Os 20 mais recentes ficam guardados.</p>
+            <h3>🗂️ Backups Automáticos</h3>
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:14px">O sistema gera backups automáticos diariamente. Clique em qualquer um para baixar.</p>
             <div id="backupList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
           </div>
         </div>
@@ -778,6 +830,23 @@ body{
   </div>
 </div>
 
+<div class="cook-overlay" id="cookOverlay">
+  <div class="cook-header">
+    <h2 id="cookTitle">Modo Cozinha</h2>
+    <button class="cook-close" onclick="closeCookMode()">✕</button>
+  </div>
+  <div class="cook-body">
+    <div class="cook-step-counter" id="cookCounter">Passo 1 de 5</div>
+    <div class="cook-step-text" id="cookText">Texto do passo...</div>
+    <div class="cook-timer" id="cookTimer" style="display:none">00:00</div>
+    <button class="cook-timer-btn cook-timer-start" id="cookTimerBtn" style="display:none" onclick="toggleCookTimer()">▶ Iniciar Timer</button>
+  </div>
+  <div class="cook-footer">
+    <button class="cook-prev" onclick="cookStep(-1)">◀ Anterior</button>
+    <button class="cook-next" onclick="cookStep(1)">Próximo ▶</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -822,6 +891,8 @@ function toast(msg) {
 let token = localStorage.getItem('tc_token');
 let currentUser = JSON.parse(localStorage.getItem('tc_user') || 'null');
 let dishes = [];
+let searchMode = 'name';
+let cookSteps = []; let cookIdx = 0; let cookTimerInterval = null; let cookTimerSeconds = 0; let cookTimerRunning = false;
 let currentDish = null;
 let editing = false;
 let activeFilter = 'Todos';
@@ -1082,9 +1153,9 @@ function renderStats() {
     <span style="margin-left:auto;font-size:.7rem">${dishes.length} pratos</span>`;
 }
 
-function renderGrid() {
+function renderGrid(customList) {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const list = dishes.filter(d =>
+  const list = customList || dishes.filter(d =>
     (activeFilter === 'Todos' || d.category === activeFilter) &&
     (statusFilter === 'todos' || (statusFilter === 'com' ? d.has_recipe : !d.has_recipe)) &&
     (!q || d.name.toLowerCase().includes(q))
@@ -1104,6 +1175,7 @@ function renderGrid() {
       <div class="card-body">
         <div class="card-name">${esc(d.name)}</div>
         <div class="card-cat">${esc(d.category)}</div>
+        ${d.ingredient_match ? '<div class="ing-match">🧂 ' + esc(d.ingredient_match) + '</div>' : ''}
         ${canEdit() ? `<button class="card-edit-btn" onclick="event.stopPropagation();quickEditDish(${d.id},'${esc(d.name).replace(/'/g,"\\'")}','${esc(d.category)}','${esc(d.emoji||'')}')">✏️</button>` : ''}
       </div>
     </div>
@@ -1187,8 +1259,14 @@ function renderDishBody() {
         </div>` : ''}
       </div>
     </div>
+    <div class="action-btns print-hide">
+      <button class="action-btn" onclick="openCookMode()">👨‍🍳 Modo Cozinha</button>
+      <button class="action-btn" onclick="shareWhatsApp()">📤 WhatsApp</button>
+      <button class="action-btn" onclick="printRecipe('a4')">🖨️ A4</button>
+      <button class="action-btn" onclick="printRecipe('thermal')">🧾 Térmica</button>
+    </div>
     ${canEdit() ? `
-    <div class="btn-row">
+    <div class="btn-row print-hide">
       <button class="btn btn-pri" onclick="startEdit()">✏️ Editar Receita</button>
       ${isAdmin() ? `<button class="btn btn-dan" onclick="deleteRecipe()">🗑 Apagar Receita</button>` : ''}
     </div>` : ''}`;
@@ -1300,20 +1378,31 @@ let cropNaturalW=0,cropNaturalH=0,cropDispW=0,cropDispH=0;
 let cropOffX=0,cropOffY=0,cropDragging=false;
 let cropStartX=0,cropStartY=0,cropStartOffX=0,cropStartOffY=0;
 let cropOrigFile=null;
+let cropDataURL=null;
 
 function startCrop(e) {
   const file = e.target.files[0]; e.target.value = '';
   if (!file) return;
   cropOrigFile = file;
   const img = document.getElementById('cropImg');
+  img.src = '';
   const reader = new FileReader();
-  reader.onload = ev => {
-    img.src = ev.target.result;
-    img.onload = () => {
-      cropNaturalW = img.naturalWidth; cropNaturalH = img.naturalHeight;
-      initCropTool();
+  reader.onload = function(ev) {
+    cropDataURL = ev.target.result;
+    img.onload = function() {
+      cropNaturalW = img.naturalWidth;
+      cropNaturalH = img.naturalHeight;
+      // ABRIR overlay PRIMEIRO para que o container tenha dimensões
       document.getElementById('cropOverlay').classList.add('open');
+      // Esperar o browser fazer layout antes de calcular tamanhos
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          initCropTool();
+        });
+      });
     };
+    img.onerror = function() { toast('❌ Erro ao carregar imagem'); };
+    img.src = cropDataURL;
   };
   reader.readAsDataURL(file);
 }
@@ -1344,35 +1433,64 @@ function clampCrop() {
 }
 
 function applyCropPos() { document.getElementById('cropImg').style.transform = `translate(${cropOffX}px, ${cropOffY}px)`; }
-function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; }
+function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; cropDataURL = null; }
 
 function confirmCrop() {
-  const container = document.getElementById('cropContainer');
-  const img = document.getElementById('cropImg');
-  const cW = container.offsetWidth, cH = container.offsetHeight;
-  const scaleX = cropNaturalW / cropDispW, scaleY = cropNaturalH / cropDispH;
-  const sx = -cropOffX * scaleX, sy = -cropOffY * scaleY;
-  const sw = cW * scaleX, sh = cH * scaleY;
-  const canvas = document.createElement('canvas');
-  const maxW = 1200;
-  canvas.width = Math.min(sw, maxW);
-  canvas.height = Math.round(canvas.width * 3 / 4);
-  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-  canvas.toBlob(blob => {
+  var container = document.getElementById('cropContainer');
+  var img = document.getElementById('cropImg');
+  var cW = container.offsetWidth, cH = container.offsetHeight;
+
+  // Proteção contra valores zero
+  if (!cW || !cH || !cropDispW || !cropDispH) {
+    toast('❌ Erro: dimensões inválidas. Tente novamente.');
+    return;
+  }
+
+  var scaleX = cropNaturalW / cropDispW;
+  var scaleY = cropNaturalH / cropDispH;
+  var sx = Math.max(0, Math.round(-cropOffX * scaleX));
+  var sy = Math.max(0, Math.round(-cropOffY * scaleY));
+  var sw = Math.round(Math.min(cW * scaleX, cropNaturalW - sx));
+  var sh = Math.round(Math.min(cH * scaleY, cropNaturalH - sy));
+
+  // Garantir valores positivos
+  if (sw <= 0 || sh <= 0) { sw = cropNaturalW; sh = cropNaturalH; sx = 0; sy = 0; }
+
+  var maxW = 800;
+  var outW = Math.round(Math.min(sw, maxW));
+  var outH = Math.round(outW * 3 / 4);
+  if (outW <= 0 || outH <= 0) { outW = 400; outH = 300; }
+
+  var canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+
+  // CSS transform NÃO afeta drawImage — podemos usar o img diretamente
+  try {
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+  } catch(err) {
+    ctx.drawImage(img, 0, 0, outW, outH);
+  }
+
+  canvas.toBlob(function(blob) {
+    if (!blob) { toast('❌ Erro ao gerar foto'); return; }
     pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-    const url = URL.createObjectURL(blob);
-    const preview = document.getElementById('photoPreview');
-    const noPreview = document.querySelector('.photo-no-preview');
+    var url = URL.createObjectURL(blob);
+    var preview = document.getElementById('photoPreview');
+    var noPreview = document.querySelector('.photo-no-preview');
     if (preview) { preview.src = url; }
     else if (noPreview) {
-      const wrap = document.createElement('div');
+      var wrap = document.createElement('div');
       wrap.className = 'photo-preview-wrap';
-      wrap.innerHTML = `<img id="photoPreview" src="${url}" alt="">`;
+      wrap.innerHTML = '<img id="photoPreview" src="' + url + '" alt="">';
       noPreview.replaceWith(wrap);
     }
     document.getElementById('cropOverlay').classList.remove('open');
     toast('📷 Foto pronta — salve a receita para confirmar');
-  }, 'image/jpeg', 0.92);
+  }, 'image/jpeg', 0.82);
 }
 
 async function removePhoto() {
@@ -1460,8 +1578,9 @@ function switchAdminTab(tab) {
   currentAdminTab = tab;
   document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
-  const btnMap = { users:'tabBtnUsers', dishes:'tabBtnDishes', stats:'tabBtnStats', activity:'tabBtnActivity', backup:'tabBtnBackup' };
+  const btnMap = { users:'tabBtnUsers', dishes:'tabBtnDishes', stats:'tabBtnStats', activity:'tabBtnActivity' };
   const contentMap = { users:'tabUsers', dishes:'tabDishes', stats:'tabStats', activity:'tabActivity', backup:'tabBackup' };
+  if (tab === 'backup') loadBackupList();
   document.getElementById(btnMap[tab])?.classList.add('active');
   document.getElementById(contentMap[tab])?.classList.add('active');
   loadCurrentAdminTab();
@@ -1472,7 +1591,6 @@ function loadCurrentAdminTab() {
   if (currentAdminTab === 'dishes') loadAdminDishes();
   if (currentAdminTab === 'stats') renderAdminStats();
   if (currentAdminTab === 'activity') loadActivity();
-  if (currentAdminTab === 'backup') loadBackup();
 }
 
 // ── USERS ──────────────────────────────────────────
@@ -1688,104 +1806,298 @@ async function loadActivity() {
   `).join('');
 }
 
-// ══════════════════════════════════════════
-//  BACKUP
-// ══════════════════════════════════════════
-async function loadBackup() {
-  // Status
-  const statusEl = document.getElementById('backupStatus');
-  const listEl = document.getElementById('backupList');
-
-  const status = await api('GET', '/admin/backup/status');
-  if (status?.error) {
-    statusEl.innerHTML = '<p style="color:var(--red)">Erro ao carregar status.</p>';
-  } else {
-    const intOk = status.integrity === 'ok';
-    statusEl.innerHTML = `
-      <div class="backup-status-grid">
-        <div class="bstat-card">
-          <div class="bstat-icon">${intOk ? '✅' : '❌'}</div>
-          <div class="bstat-label">Integridade</div>
-          <div class="bstat-val" style="color:${intOk ? 'var(--green)' : 'var(--red)'}">${intOk ? 'OK' : 'ERRO'}</div>
-        </div>
-        <div class="bstat-card">
-          <div class="bstat-icon">💽</div>
-          <div class="bstat-label">Tamanho</div>
-          <div class="bstat-val">${status.db_size_kb} KB</div>
-        </div>
-        <div class="bstat-card">
-          <div class="bstat-icon">🍽️</div>
-          <div class="bstat-label">Pratos</div>
-          <div class="bstat-val">${status.counts.pratos}</div>
-        </div>
-        <div class="bstat-card">
-          <div class="bstat-icon">📝</div>
-          <div class="bstat-label">Receitas</div>
-          <div class="bstat-val">${status.counts.receitas}</div>
-        </div>
-        <div class="bstat-card">
-          <div class="bstat-icon">👥</div>
-          <div class="bstat-label">Usuários</div>
-          <div class="bstat-val">${status.counts.usuarios}</div>
-        </div>
-        <div class="bstat-card">
-          <div class="bstat-icon">💾</div>
-          <div class="bstat-label">Backups</div>
-          <div class="bstat-val">${status.total_backups}</div>
-        </div>
-      </div>
-      ${status.ultimo_backup ? `<p style="font-size:.76rem;color:var(--muted);margin-top:10px">Último backup automático: <strong>${status.ultimo_backup.replace('backup-','').replace('.db','')}</strong></p>` : ''}
-    `;
-  }
-
-  // Lista de backups
-  const files = await api('GET', '/admin/backup/list');
-  if (!files?.length) {
-    listEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum backup automático ainda. O primeiro será criado em até 6 horas.</p>';
-    return;
-  }
-  listEl.innerHTML = files.map(f => {
-    const sizeKb = Math.round(f.size / 1024);
-    const date = new Date(f.date).toLocaleString('pt-BR');
-    return `
-      <div class="backup-item">
-        <div>
-          <div class="backup-name">${f.name.replace('backup-','').replace('.db','')}</div>
-          <div class="backup-meta">${sizeKb} KB · ${date}</div>
-        </div>
-        <a class="btn-sm btn-sm-edit" href="/api/admin/backup/download/${f.name}" download="${f.name}">⬇️ Baixar</a>
-      </div>
-    `;
-  }).join('');
-}
-
-async function downloadBackup() {
-  toast('⏳ Gerando backup…');
-  // Abre direto como download via link com token
-  const a = document.createElement('a');
-  a.href = '/api/admin/backup/download';
-  // Passa token via query não é ideal mas para download direto é necessário
-  // Melhor abrir numa nova aba autenticada
-  const res = await fetch('/api/admin/backup/download', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!res.ok) { toast('❌ Erro ao gerar backup'); return; }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const stamp = new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
-  a.href = url;
-  a.download = `receituario-backup-${stamp}.db`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('✅ Backup baixado!');
-}
-
 // ═══ KEYBOARD ═══
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     ['recipeOverlay','editDishOverlay','editUserOverlay','cropOverlay'].forEach(closeModal);
   }
 });
+
+async function downloadBackup() {
+  const btn = event.target;
+  const status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando backup...';
+  status.textContent = '';
+  try {
+    const resp = await fetch('/api/admin/backup/download', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!resp.ok) throw new Error('Erro ao gerar backup');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const stamp = now.toISOString().slice(0,10);
+    a.href = url; a.download = `receituario-backup-${stamp}.db`;
+    a.click();
+    URL.revokeObjectURL(url);
+    status.innerHTML = '✅ Backup baixado com sucesso!';
+  } catch(e) {
+    status.innerHTML = '❌ Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 Baixar Backup Agora';
+  }
+}
+
+async function loadBackupList() {
+  const el = document.getElementById('backupList');
+  try {
+    const data = await api('GET', '/admin/backup/list');
+    if (!data.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum backup automático ainda.</p>'; return; }
+    el.innerHTML = data.map(b => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+        <div>
+          <div style="font-size:.88rem;font-weight:600">${b.filename}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${(b.size/1024).toFixed(1)} KB</div>
+        </div>
+        <button onclick="downloadSpecificBackup('${b.filename}')" style="background:var(--accent);color:#fff8ee;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;cursor:pointer">⬇️ Baixar</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Erro ao carregar lista.</p>';
+  }
+}
+
+async function downloadSpecificBackup(filename) {
+  const resp = await fetch(`/api/admin/backup/download/${filename}`, { headers: { 'Authorization': 'Bearer ' + token } });
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+// ══════════════════════════════════════════
+//  INGREDIENT SEARCH
+// ══════════════════════════════════════════
+function setSearchMode(mode) {
+  searchMode = mode;
+  document.getElementById('searchByName').classList.toggle('active', mode === 'name');
+  document.getElementById('searchByIng').classList.toggle('active', mode === 'ingredient');
+  document.getElementById('searchInput').placeholder = mode === 'name' ? 'Buscar prato…' : 'Buscar por ingrediente…';
+  document.getElementById('searchInput').value = '';
+  renderGrid();
+}
+
+var searchTimeout = null;
+function handleSearch() {
+  clearTimeout(searchTimeout);
+  var q = document.getElementById('searchInput').value.trim();
+  if (searchMode === 'name') { renderGrid(); return; }
+  if (q.length < 2) { renderGrid(); return; }
+  searchTimeout = setTimeout(async function() {
+    var results = await api('GET', '/search/ingredients?q=' + encodeURIComponent(q));
+    if (results && results.length) {
+      renderGrid(results);
+    } else {
+      document.getElementById('grid').innerHTML = '<div class="no-results"><div class="big">🧂</div>Nenhum prato com esse ingrediente.</div>';
+    }
+  }, 350);
+}
+
+// ══════════════════════════════════════════
+//  PRINT RECIPE
+// ══════════════════════════════════════════
+function printRecipe(format) {
+  if (!currentDish || !currentDish.recipe) { toast('❌ Sem receita para imprimir'); return; }
+  var d = currentDish, r = d.recipe;
+  var w = window.open('', '_blank');
+  var thermal = format === 'thermal';
+
+  var ings = (r.ingredientes || []).map(function(i) {
+    return '<tr><td>' + esc(i.nome) + '</td><td>' + esc(i.qtd) + '</td><td>' + esc(i.un) + '</td></tr>';
+  }).join('');
+
+  var steps = (r.modo || []).map(function(s, i) {
+    return '<li>' + esc(s) + '</li>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<title>Ficha Técnica - ' + esc(d.name) + '</title>';
+  html += '<style>';
+  html += 'body{font-family:Arial,sans-serif;margin:0;padding:' + (thermal ? '5mm' : '15mm') + ';';
+  html += thermal ? 'width:72mm;font-size:8pt}' : 'max-width:210mm;font-size:11pt}';
+  html += 'h1{font-size:' + (thermal ? '11pt' : '18pt') + ';border-bottom:2px solid #333;padding-bottom:5px;margin-bottom:10px}';
+  html += '.meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:' + (thermal ? '7pt' : '9pt') + '}';
+  html += '.meta span{padding:3px 8px;border:1px solid #ccc;border-radius:4px}';
+  html += 'h2{font-size:' + (thermal ? '9pt' : '13pt') + ';margin:12px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}';
+  html += 'table{width:100%;border-collapse:collapse;margin-bottom:10px}';
+  html += 'th,td{border:1px solid #ccc;padding:' + (thermal ? '2px 4px;font-size:7pt' : '4px 8px;font-size:10pt') + ';text-align:left}';
+  html += 'th{background:#f0f0f0;font-weight:bold}';
+  html += 'ol{padding-left:18px}li{margin-bottom:' + (thermal ? '3px' : '5px') + '}';
+  html += '.obs{background:#f9f6f0;border:1px solid #e0d5c0;padding:8px;border-radius:4px;font-size:' + (thermal ? '7pt' : '9pt') + '}';
+  html += '.footer{margin-top:15px;font-size:7pt;color:#999;text-align:center;border-top:1px solid #ddd;padding-top:5px}';
+  if (!thermal) html += 'img.photo{max-width:300px;max-height:200px;border-radius:8px;margin-bottom:10px;display:block}';
+  html += '</style></head><body>';
+
+  html += '<h1>' + (d.emoji || '') + ' ' + esc(d.name) + '</h1>';
+  if (!thermal && d.photo_url) html += '<img class="photo" src="' + esc(d.photo_url) + '">';
+
+  html += '<div class="meta">';
+  if (r.rendimento) html += '<span>🍽️ ' + esc(r.rendimento) + '</span>';
+  if (r.tempo_preparo) html += '<span>⏱ ' + esc(r.tempo_preparo) + '</span>';
+  if (r.tempo_forno) html += '<span>🔥 ' + esc(r.tempo_forno) + '</span>';
+  if (r.custo) html += '<span>💰 R$' + esc(r.custo) + '</span>';
+  html += '</div>';
+
+  if (r.ingredientes && r.ingredientes.length) {
+    html += '<h2>🧂 Ingredientes</h2>';
+    html += '<table><thead><tr><th>Ingrediente</th><th>Qtd</th><th>Un.</th></tr></thead><tbody>' + ings + '</tbody></table>';
+  }
+  if (r.modo && r.modo.length) {
+    html += '<h2>👨‍🍳 Modo de Preparo</h2><ol>' + steps + '</ol>';
+  }
+  if (r.observacoes) {
+    html += '<h2>📝 Observações</h2><div class="obs">' + esc(r.observacoes) + '</div>';
+  }
+
+  html += '<div class="footer">🐰 Receituário Toca do Coelho — Impresso em ' + new Date().toLocaleDateString('pt-BR') + '</div>';
+  html += '</body></html>';
+
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function() { w.print(); }, 300);
+}
+
+// ══════════════════════════════════════════
+//  SHARE WHATSAPP
+// ══════════════════════════════════════════
+function shareWhatsApp() {
+  if (!currentDish || !currentDish.recipe) { toast('❌ Sem receita para compartilhar'); return; }
+  var d = currentDish, r = d.recipe;
+  var text = '🐰 *' + d.name + '*\n';
+  text += '📂 ' + d.category + '\n\n';
+  if (r.rendimento) text += '🍽️ Rend: ' + r.rendimento + '\n';
+  if (r.tempo_preparo) text += '⏱ Preparo: ' + r.tempo_preparo + '\n';
+  if (r.tempo_forno) text += '🔥 Forno: ' + r.tempo_forno + '\n';
+
+  if (r.ingredientes && r.ingredientes.length) {
+    text += '\n*🧂 Ingredientes:*\n';
+    r.ingredientes.forEach(function(i) {
+      text += '• ' + i.nome;
+      if (i.qtd) text += ' — ' + i.qtd;
+      if (i.un) text += ' ' + i.un;
+      text += '\n';
+    });
+  }
+
+  if (r.modo && r.modo.length) {
+    text += '\n*👨‍🍳 Modo de Preparo:*\n';
+    r.modo.forEach(function(s, i) {
+      text += (i + 1) + '. ' + s + '\n';
+    });
+  }
+
+  if (r.observacoes) text += '\n📝 *Obs:* ' + r.observacoes + '\n';
+  text += '\n_Receituário Toca do Coelho_ 🐰';
+
+  var url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+}
+
+// ══════════════════════════════════════════
+//  COOKING MODE
+// ══════════════════════════════════════════
+function openCookMode() {
+  if (!currentDish || !currentDish.recipe || !currentDish.recipe.modo || !currentDish.recipe.modo.length) {
+    toast('❌ Sem modo de preparo'); return;
+  }
+  cookSteps = currentDish.recipe.modo;
+  cookIdx = 0;
+  stopCookTimer();
+  document.getElementById('cookTitle').textContent = currentDish.name;
+  document.getElementById('cookOverlay').classList.add('open');
+  renderCookStep();
+  // Tentar tela cheia no mobile
+  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch(e) {}
+}
+
+function closeCookMode() {
+  stopCookTimer();
+  document.getElementById('cookOverlay').classList.remove('open');
+  try { document.exitFullscreen && document.exitFullscreen(); } catch(e) {}
+}
+
+function cookStep(dir) {
+  var next = cookIdx + dir;
+  if (next < 0) next = 0;
+  if (next >= cookSteps.length) {
+    closeCookMode();
+    toast('✅ Receita concluída! Bom apetite! 🎉');
+    return;
+  }
+  cookIdx = next;
+  stopCookTimer();
+  renderCookStep();
+}
+
+function renderCookStep() {
+  document.getElementById('cookCounter').textContent = 'Passo ' + (cookIdx + 1) + ' de ' + cookSteps.length;
+  document.getElementById('cookText').textContent = cookSteps[cookIdx];
+
+  // Detectar tempo no texto do passo (ex: "30 min", "15 minutos", "1 hora")
+  var text = cookSteps[cookIdx].toLowerCase();
+  var match = text.match(/(\d+)\s*(min|minutos?|hora?s?|seg|segundos?)/);
+  var timerEl = document.getElementById('cookTimer');
+  var timerBtn = document.getElementById('cookTimerBtn');
+
+  if (match) {
+    var num = parseInt(match[1]);
+    var unit = match[2];
+    if (unit.startsWith('hora') || unit === 'h') cookTimerSeconds = num * 3600;
+    else if (unit.startsWith('seg')) cookTimerSeconds = num;
+    else cookTimerSeconds = num * 60;
+    timerEl.style.display = 'block';
+    timerBtn.style.display = 'inline-block';
+    updateCookTimerDisplay();
+  } else {
+    timerEl.style.display = 'none';
+    timerBtn.style.display = 'none';
+  }
+
+  // Atualizar botões
+  var prevBtn = document.querySelector('.cook-prev');
+  var nextBtn = document.querySelector('.cook-next');
+  prevBtn.style.opacity = cookIdx === 0 ? '0.4' : '1';
+  nextBtn.textContent = cookIdx === cookSteps.length - 1 ? '✅ Concluir' : 'Próximo ▶';
+}
+
+function toggleCookTimer() {
+  if (cookTimerRunning) {
+    stopCookTimer();
+  } else {
+    cookTimerRunning = true;
+    document.getElementById('cookTimerBtn').textContent = '⏸ Pausar';
+    document.getElementById('cookTimerBtn').className = 'cook-timer-btn cook-timer-stop';
+    cookTimerInterval = setInterval(function() {
+      cookTimerSeconds--;
+      updateCookTimerDisplay();
+      if (cookTimerSeconds <= 0) {
+        stopCookTimer();
+        document.getElementById('cookTimer').textContent = '00:00';
+        // Vibrar e alertar
+        try { navigator.vibrate && navigator.vibrate([500, 200, 500]); } catch(e) {}
+        toast('⏰ Tempo do passo ' + (cookIdx + 1) + ' acabou!');
+      }
+    }, 1000);
+  }
+}
+
+function stopCookTimer() {
+  cookTimerRunning = false;
+  clearInterval(cookTimerInterval);
+  var btn = document.getElementById('cookTimerBtn');
+  if (btn) { btn.textContent = '▶ Iniciar Timer'; btn.className = 'cook-timer-btn cook-timer-start'; }
+}
+
+function updateCookTimerDisplay() {
+  var m = Math.floor(cookTimerSeconds / 60);
+  var s = cookTimerSeconds % 60;
+  document.getElementById('cookTimer').textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
 </script>
 </body>
 </html>
