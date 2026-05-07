@@ -556,6 +556,7 @@ body{
           <button class="atab" onclick="switchAdminTab('dishes')" id="tabBtnDishes">🍽️ Pratos</button>
           <button class="atab" onclick="switchAdminTab('stats')" id="tabBtnStats">📊 Estatísticas</button>
           <button class="atab" onclick="switchAdminTab('activity')" id="tabBtnActivity">📋 Atividades</button>
+          <button class="atab" onclick="switchAdminTab('backup')" id="tabBtnBackup">💾 Backup</button>
         </div>
       </div>
       <div class="admin-body">
@@ -626,6 +627,22 @@ body{
           <div class="admin-section">
             <h3>Registro de Atividades</h3>
             <div class="log-list" id="activityLog"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+
+        <div class="admin-tab-content" id="tabBackup">
+          <div class="admin-section">
+            <h3>💾 Backup do Banco de Dados</h3>
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:18px">Baixe uma cópia completa do banco com todas as receitas, ingredientes e usuários.</p>
+            <button class="btn-login" onclick="downloadBackup()" style="max-width:280px;display:flex;align-items:center;justify-content:center;gap:8px">
+              💾 Baixar Backup Agora
+            </button>
+            <div id="backupStatus" style="margin-top:16px;font-size:.85rem;color:var(--muted)"></div>
+          </div>
+          <div class="admin-section">
+            <h3>🗂️ Backups Automáticos</h3>
+            <p style="color:var(--muted);font-size:.88rem;margin-bottom:14px">O sistema gera backups automáticos diariamente. Clique em qualquer um para baixar.</p>
+            <div id="backupList"><div class="loader"><div class="spinner"></div>Carregando…</div></div>
           </div>
         </div>
 
@@ -1272,6 +1289,51 @@ let cropOffX=0,cropOffY=0,cropDragging=false;
 let cropStartX=0,cropStartY=0,cropStartOffX=0,cropStartOffY=0;
 let cropOrigFile=null;
 
+function getExifOrientation(file, callback) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const view = new DataView(e.target.result);
+    if (view.getUint16(0, false) !== 0xFFD8) return callback(-1);
+    let offset = 2, length = e.target.result.byteLength;
+    while (offset < length) {
+      const marker = view.getUint16(offset, false); offset += 2;
+      if (marker === 0xFFE1) {
+        if (view.getUint32(offset += 2, false) !== 0x45786966) return callback(-1);
+        const little = view.getUint16(offset += 6, false) === 0x4949;
+        offset += view.getUint32(offset + 4, little);
+        const tags = view.getUint16(offset, little); offset += 2;
+        for (let i = 0; i < tags; i++) {
+          if (view.getUint16(offset + i * 12, little) === 0x0112)
+            return callback(view.getUint16(offset + i * 12 + 8, little));
+        }
+      } else if ((marker & 0xFF00) !== 0xFF00) break;
+      else offset += view.getUint16(offset, false);
+    }
+    callback(-1);
+  };
+  reader.readAsArrayBuffer(file.slice(0, 64 * 1024));
+}
+
+function fixImageOrientation(img, orientation, callback) {
+  if (orientation <= 1 || orientation === -1) return callback(img.src);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (orientation >= 5) { canvas.width = h; canvas.height = w; }
+  else { canvas.width = w; canvas.height = h; }
+  switch(orientation) {
+    case 2: ctx.transform(-1,0,0,1,w,0); break;
+    case 3: ctx.transform(-1,0,0,-1,w,h); break;
+    case 4: ctx.transform(1,0,0,-1,0,h); break;
+    case 5: ctx.transform(0,1,1,0,0,0); break;
+    case 6: ctx.transform(0,1,-1,0,h,0); break;
+    case 7: ctx.transform(0,-1,-1,0,h,w); break;
+    case 8: ctx.transform(0,-1,1,0,0,w); break;
+  }
+  ctx.drawImage(img, 0, 0);
+  callback(canvas.toDataURL('image/jpeg', 0.95));
+}
+
 function startCrop(e) {
   const file = e.target.files[0]; e.target.value = '';
   if (!file) return;
@@ -1279,12 +1341,20 @@ function startCrop(e) {
   const img = document.getElementById('cropImg');
   const reader = new FileReader();
   reader.onload = ev => {
-    img.src = ev.target.result;
-    img.onload = () => {
-      cropNaturalW = img.naturalWidth; cropNaturalH = img.naturalHeight;
-      initCropTool();
-      document.getElementById('cropOverlay').classList.add('open');
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      getExifOrientation(file, orientation => {
+        fixImageOrientation(tempImg, orientation, correctedSrc => {
+          img.src = correctedSrc;
+          img.onload = () => {
+            cropNaturalW = img.naturalWidth; cropNaturalH = img.naturalHeight;
+            initCropTool();
+            document.getElementById('cropOverlay').classList.add('open');
+          };
+        });
+      });
     };
+    tempImg.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -1432,7 +1502,8 @@ function switchAdminTab(tab) {
   document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
   const btnMap = { users:'tabBtnUsers', dishes:'tabBtnDishes', stats:'tabBtnStats', activity:'tabBtnActivity' };
-  const contentMap = { users:'tabUsers', dishes:'tabDishes', stats:'tabStats', activity:'tabActivity' };
+  const contentMap = { users:'tabUsers', dishes:'tabDishes', stats:'tabStats', activity:'tabActivity', backup:'tabBackup' };
+  if (tab === 'backup') loadBackupList();
   document.getElementById(btnMap[tab])?.classList.add('active');
   document.getElementById(contentMap[tab])?.classList.add('active');
   loadCurrentAdminTab();
@@ -1664,6 +1735,62 @@ document.addEventListener('keydown', e => {
     ['recipeOverlay','editDishOverlay','editUserOverlay','cropOverlay'].forEach(closeModal);
   }
 });
+
+async function downloadBackup() {
+  const btn = event.target;
+  const status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando backup...';
+  status.textContent = '';
+  try {
+    const resp = await fetch('/api/admin/backup/download', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!resp.ok) throw new Error('Erro ao gerar backup');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const stamp = now.toISOString().slice(0,10);
+    a.href = url; a.download = `receituario-backup-${stamp}.db`;
+    a.click();
+    URL.revokeObjectURL(url);
+    status.innerHTML = '✅ Backup baixado com sucesso!';
+  } catch(e) {
+    status.innerHTML = '❌ Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 Baixar Backup Agora';
+  }
+}
+
+async function loadBackupList() {
+  const el = document.getElementById('backupList');
+  try {
+    const data = await api('GET', '/admin/backup/list');
+    if (!data.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhum backup automático ainda.</p>'; return; }
+    el.innerHTML = data.map(b => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+        <div>
+          <div style="font-size:.88rem;font-weight:600">${b.filename}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${(b.size/1024).toFixed(1)} KB</div>
+        </div>
+        <button onclick="downloadSpecificBackup('${b.filename}')" style="background:var(--accent);color:#fff8ee;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;cursor:pointer">⬇️ Baixar</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Erro ao carregar lista.</p>';
+  }
+}
+
+async function downloadSpecificBackup(filename) {
+  const resp = await fetch(`/api/admin/backup/download/${filename}`, { headers: { 'Authorization': 'Bearer ' + token } });
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 </script>
 </body>
 </html>
