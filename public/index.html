@@ -1295,18 +1295,23 @@ function startCrop(e) {
   if (!file) return;
   cropOrigFile = file;
   const img = document.getElementById('cropImg');
-  // Limpa src anterior para forçar novo onload
   img.src = '';
   const reader = new FileReader();
-  reader.onload = ev => {
-    img.onload = () => {
+  reader.onload = function(ev) {
+    cropDataURL = ev.target.result;
+    img.onload = function() {
       cropNaturalW = img.naturalWidth;
       cropNaturalH = img.naturalHeight;
-      initCropTool();
+      // ABRIR overlay PRIMEIRO para que o container tenha dimensões
       document.getElementById('cropOverlay').classList.add('open');
+      // Esperar o browser fazer layout antes de calcular tamanhos
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          initCropTool();
+        });
+      });
     };
-    img.onerror = () => toast('❌ Erro ao carregar imagem');
-    cropDataURL = ev.target.result;
+    img.onerror = function() { toast('❌ Erro ao carregar imagem'); };
     img.src = cropDataURL;
   };
   reader.readAsDataURL(file);
@@ -1341,61 +1346,61 @@ function applyCropPos() { document.getElementById('cropImg').style.transform = `
 function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; cropDataURL = null; }
 
 function confirmCrop() {
-  const container = document.getElementById('cropContainer');
-  const img = document.getElementById('cropImg');
-  const cW = container.offsetWidth, cH = container.offsetHeight;
-  const scaleX = cropNaturalW / cropDispW, scaleY = cropNaturalH / cropDispH;
-  const sx = Math.max(0, -cropOffX * scaleX);
-  const sy = Math.max(0, -cropOffY * scaleY);
-  const sw = Math.min(cW * scaleX, cropNaturalW - sx);
-  const sh = Math.min(cH * scaleY, cropNaturalH - sy);
+  var container = document.getElementById('cropContainer');
+  var img = document.getElementById('cropImg');
+  var cW = container.offsetWidth, cH = container.offsetHeight;
 
-  // Limitar tamanho máximo para evitar limite de canvas no iOS Safari (max ~4096px)
-  const maxW = 800;
-  const outW = Math.round(Math.min(sw, maxW));
-  const outH = Math.round(outW * 3 / 4);
+  // Proteção contra valores zero
+  if (!cW || !cH || !cropDispW || !cropDispH) {
+    toast('❌ Erro: dimensões inválidas. Tente novamente.');
+    return;
+  }
 
-  const canvas = document.createElement('canvas');
+  var scaleX = cropNaturalW / cropDispW;
+  var scaleY = cropNaturalH / cropDispH;
+  var sx = Math.max(0, Math.round(-cropOffX * scaleX));
+  var sy = Math.max(0, Math.round(-cropOffY * scaleY));
+  var sw = Math.round(Math.min(cW * scaleX, cropNaturalW - sx));
+  var sh = Math.round(Math.min(cH * scaleY, cropNaturalH - sy));
+
+  // Garantir valores positivos
+  if (sw <= 0 || sh <= 0) { sw = cropNaturalW; sh = cropNaturalH; sx = 0; sy = 0; }
+
+  var maxW = 800;
+  var outW = Math.round(Math.min(sw, maxW));
+  var outH = Math.round(outW * 3 / 4);
+  if (outW <= 0 || outH <= 0) { outW = 400; outH = 300; }
+
+  var canvas = document.createElement('canvas');
   canvas.width = outW;
   canvas.height = outH;
-  const ctx = canvas.getContext('2d');
+  var ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, outW, outH);
 
-  const clean = new Image();
-  clean.onload = function() {
-    try {
-      ctx.drawImage(clean, sx, sy, sw, sh, 0, 0, outW, outH);
-    } catch(err) {
-      // fallback: desenha a imagem inteira redimensionada
-      ctx.drawImage(clean, 0, 0, outW, outH);
-    }
-    canvas.toBlob(function(blob) {
-      if (!blob) { toast('❌ Erro ao gerar foto'); return; }
-      pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-      const url = URL.createObjectURL(blob);
-      const preview = document.getElementById('photoPreview');
-      const noPreview = document.querySelector('.photo-no-preview');
-      if (preview) { preview.src = url; }
-      else if (noPreview) {
-        const wrap = document.createElement('div');
-        wrap.className = 'photo-preview-wrap';
-        wrap.innerHTML = '<img id="photoPreview" src="' + url + '" alt="">';
-        noPreview.replaceWith(wrap);
-      }
-      document.getElementById('cropOverlay').classList.remove('open');
-      toast('📷 Foto pronta — salve a receita para confirmar');
-    }, 'image/jpeg', 0.82);
-  };
-  clean.onerror = function() {
-    toast('❌ Erro imagem. dataURL: ' + (cropDataURL ? cropDataURL.length + 'chars' : 'NULL'));
-  };
-  if (!cropDataURL) {
-    toast('❌ cropDataURL vazio — tentando img.src');
-    clean.src = img.src;
-  } else {
-    clean.src = cropDataURL;
+  // CSS transform NÃO afeta drawImage — podemos usar o img diretamente
+  try {
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+  } catch(err) {
+    ctx.drawImage(img, 0, 0, outW, outH);
   }
+
+  canvas.toBlob(function(blob) {
+    if (!blob) { toast('❌ Erro ao gerar foto'); return; }
+    pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+    var url = URL.createObjectURL(blob);
+    var preview = document.getElementById('photoPreview');
+    var noPreview = document.querySelector('.photo-no-preview');
+    if (preview) { preview.src = url; }
+    else if (noPreview) {
+      var wrap = document.createElement('div');
+      wrap.className = 'photo-preview-wrap';
+      wrap.innerHTML = '<img id="photoPreview" src="' + url + '" alt="">';
+      noPreview.replaceWith(wrap);
+    }
+    document.getElementById('cropOverlay').classList.remove('open');
+    toast('📷 Foto pronta — salve a receita para confirmar');
+  }, 'image/jpeg', 0.82);
 }
 
 async function removePhoto() {
