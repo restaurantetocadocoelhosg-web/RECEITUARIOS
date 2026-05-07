@@ -1289,74 +1289,47 @@ let cropOffX=0,cropOffY=0,cropDragging=false;
 let cropStartX=0,cropStartY=0,cropStartOffX=0,cropStartOffY=0;
 let cropOrigFile=null;
 
-function getExifOrientation(file, callback) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const view = new DataView(e.target.result);
-    if (view.getUint16(0, false) !== 0xFFD8) return callback(-1);
-    let offset = 2, length = e.target.result.byteLength;
-    while (offset < length) {
-      const marker = view.getUint16(offset, false); offset += 2;
-      if (marker === 0xFFE1) {
-        if (view.getUint32(offset += 2, false) !== 0x45786966) return callback(-1);
-        const little = view.getUint16(offset += 6, false) === 0x4949;
-        offset += view.getUint32(offset + 4, little);
-        const tags = view.getUint16(offset, little); offset += 2;
-        for (let i = 0; i < tags; i++) {
-          if (view.getUint16(offset + i * 12, little) === 0x0112)
-            return callback(view.getUint16(offset + i * 12 + 8, little));
-        }
-      } else if ((marker & 0xFF00) !== 0xFF00) break;
-      else offset += view.getUint16(offset, false);
-    }
-    callback(-1);
-  };
-  reader.readAsArrayBuffer(file.slice(0, 64 * 1024));
-}
-
-function fixImageOrientation(img, orientation, callback) {
-  if (orientation <= 1 || orientation === -1) return callback(img.src);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const w = img.naturalWidth, h = img.naturalHeight;
-  if (orientation >= 5) { canvas.width = h; canvas.height = w; }
-  else { canvas.width = w; canvas.height = h; }
-  switch(orientation) {
-    case 2: ctx.transform(-1,0,0,1,w,0); break;
-    case 3: ctx.transform(-1,0,0,-1,w,h); break;
-    case 4: ctx.transform(1,0,0,-1,0,h); break;
-    case 5: ctx.transform(0,1,1,0,0,0); break;
-    case 6: ctx.transform(0,1,-1,0,h,0); break;
-    case 7: ctx.transform(0,-1,-1,0,h,w); break;
-    case 8: ctx.transform(0,-1,1,0,0,w); break;
+// Converte o arquivo de imagem para um dataURL já com orientação corrigida
+// Usa createImageBitmap (suportado em iOS Safari 15+, Android Chrome) que
+// respeita automaticamente os metadados EXIF de orientação.
+async function fileToCorrectDataURL(file) {
+  try {
+    // createImageBitmap lê EXIF e aplica orientação automaticamente
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return canvas.toDataURL('image/jpeg', 0.95);
+  } catch(err) {
+    // Fallback: FileReader simples sem correção EXIF
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
-  ctx.drawImage(img, 0, 0);
-  callback(canvas.toDataURL('image/jpeg', 0.95));
 }
 
-function startCrop(e) {
+async function startCrop(e) {
   const file = e.target.files[0]; e.target.value = '';
   if (!file) return;
   cropOrigFile = file;
-  const img = document.getElementById('cropImg');
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const tempImg = new Image();
-    tempImg.onload = () => {
-      getExifOrientation(file, orientation => {
-        fixImageOrientation(tempImg, orientation, correctedSrc => {
-          img.src = correctedSrc;
-          img.onload = () => {
-            cropNaturalW = img.naturalWidth; cropNaturalH = img.naturalHeight;
-            initCropTool();
-            document.getElementById('cropOverlay').classList.add('open');
-          };
-        });
-      });
+  try {
+    const dataURL = await fileToCorrectDataURL(file);
+    const img = document.getElementById('cropImg');
+    img.onload = () => {
+      cropNaturalW = img.naturalWidth;
+      cropNaturalH = img.naturalHeight;
+      initCropTool();
+      document.getElementById('cropOverlay').classList.add('open');
     };
-    tempImg.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+    img.src = dataURL;
+  } catch(err) {
+    toast('❌ Erro ao carregar imagem: ' + err.message);
+  }
 }
 
 function initCropTool() {
@@ -1387,18 +1360,33 @@ function clampCrop() {
 function applyCropPos() { document.getElementById('cropImg').style.transform = `translate(${cropOffX}px, ${cropOffY}px)`; }
 function cancelCrop() { document.getElementById('cropOverlay').classList.remove('open'); cropOrigFile = null; }
 
-function confirmCrop() {
+async function confirmCrop() {
   const container = document.getElementById('cropContainer');
   const img = document.getElementById('cropImg');
   const cW = container.offsetWidth, cH = container.offsetHeight;
   const scaleX = cropNaturalW / cropDispW, scaleY = cropNaturalH / cropDispH;
-  const sx = -cropOffX * scaleX, sy = -cropOffY * scaleY;
-  const sw = cW * scaleX, sh = cH * scaleY;
-  const canvas = document.createElement('canvas');
+  const sx = Math.max(0, -cropOffX * scaleX);
+  const sy = Math.max(0, -cropOffY * scaleY);
+  const sw = Math.min(cW * scaleX, cropNaturalW - sx);
+  const sh = Math.min(cH * scaleY, cropNaturalH - sy);
   const maxW = 1200;
-  canvas.width = Math.min(sw, maxW);
-  canvas.height = Math.round(canvas.width * 3 / 4);
-  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  const outW = Math.min(sw, maxW);
+  const outH = Math.round(outW * 3 / 4);
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+  try {
+    const bitmap = await createImageBitmap(cropOrigFile, sx, sy, sw, sh, {
+      resizeWidth: outW, resizeHeight: outH, resizeQuality: 'high'
+    });
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+  } catch(err) {
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+  }
   canvas.toBlob(blob => {
     pendingPhoto = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
     const url = URL.createObjectURL(blob);
