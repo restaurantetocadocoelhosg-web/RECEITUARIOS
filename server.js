@@ -469,6 +469,25 @@ app.delete('/api/dishes/:id/recipe', auth, canEdit, (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ══════════════════════════════════════════════════════
+//  SEARCH ROUTES
+// ══════════════════════════════════════════════════════
+app.get('/api/search/ingredients', auth, (req, res) => {
+  const q = (req.query.q || '').trim().toLowerCase();
+  if (!q) return res.json([]);
+  const results = db.prepare(`
+    SELECT DISTINCT d.id, d.name, d.category, d.emoji, d.photo_url, i.nome as ingredient_match,
+      CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as has_recipe
+    FROM ingredients i
+    JOIN recipes r ON r.id = i.recipe_id
+    JOIN dishes d ON d.id = r.dish_id
+    WHERE LOWER(i.nome) LIKE ?
+    ORDER BY d.category, d.name
+  `).all('%' + q + '%');
+  res.json(results);
+});
+
 // ══════════════════════════════════════════════════════
 //  ACTIVITY LOG ROUTES
 // ══════════════════════════════════════════════════════
