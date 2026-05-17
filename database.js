@@ -91,7 +91,12 @@ try { db.prepare("UPDATE users SET role='operador' WHERE role='viewer'").run(); 
 function seedAdmin() {
   const exists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
   if (!exists) {
-    const hash = bcrypt.hashSync(process.env.ADMIN_PASS || 'toca2024', 10);
+    const adminPass = process.env.ADMIN_PASS;
+    if (!adminPass) {
+      console.warn('⚠️  ADMIN_PASS não definido — seed do admin ignorado. Defina a variável de ambiente para criar o admin inicial.');
+      return;
+    }
+    const hash = bcrypt.hashSync(adminPass, 10);
     db.prepare(`INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)`)
       .run('Administrador', 'admin', hash, 'admin');
     console.log('✅ Admin criado');
